@@ -1,8 +1,21 @@
 -module(mb_cp950).
--export([init/0, decode/1, decode/2, encode/1, encode/2]).
+-export([config/0, init/0, decode/1, decode/2, encode/1, encode/2]).
 
--define(PROCESS_DICT_ATOM, mb_codecs_dbcs_cp950).
--define(TXTNAME, "CP950.CONF").
--define(BINNAME, "CP950.BIN").
+config() ->
+	{mb, mb_codecs_dbcs_cp950, "CP950.CONF", "CP950.BIN"}.
 
--include("mb_dbcs.erl").
+init() ->
+	mb_dbcs:init(?MODULE).
+
+encode(Unicode) when is_list(Unicode) ->
+    mb_dbcs:encode(?MODULE, Unicode).
+
+encode(Unicode, Options) when is_list(Unicode), is_list(Options) ->
+	mb_dbcs:encode(?MODULE, Unicode, Options).
+
+decode(Binary) when is_bitstring(Binary) ->
+    mb_dbcs:decode(?MODULE, Binary).
+
+decode(Binary, Options) when is_bitstring(Binary), is_list(Options) ->
+	mb_dbcs:decode(?MODULE, Binary, Options).
+	

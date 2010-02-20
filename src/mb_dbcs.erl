@@ -1,6 +1,6 @@
-% Note: Do not load this module, juest -include("mb_dbcs.erl").
-
--define(MB_MODULE, mb).
+%% User-defined behaviour module
+-module(mb_dbcs).
+-export([init/1, decode/2, decode/3, encode/2, encode/3]).
 
 -record(encode_profile, {
       encode_dict        :: dict(),            % encode mapping dict
@@ -19,14 +19,15 @@
      }).
 -define(DECODE_ERROR_REPLACE_CHAR, 16#FFFD).   % default replace char
 
-init() ->
-    Path = code:priv_dir(?MB_MODULE),
-    Txtname = filename:join(Path, ?TXTNAME),
-    Binname = filename:join(Path, ?BINNAME),
+init(Mod) ->
+	{MB_MODULE, PROCESS_DICT_ATOM, CONF_NAME, BIN_NAME} = Mod:config(), 
+    Path = code:priv_dir(MB_MODULE),
+    Txtname = filename:join(Path, CONF_NAME),
+    Binname = filename:join(Path, BIN_NAME),
     case filelib:is_file(Binname) of
         true ->
             {ok, Binary} = file:read_file(Binname),
-            erlang:put(?PROCESS_DICT_ATOM, binary_to_term(Binary)),
+            erlang:put(PROCESS_DICT_ATOM, binary_to_term(Binary)),
             ok;
         false ->
             {ok, [PropList]} = file:consult(Txtname),
@@ -36,7 +37,7 @@ init() ->
             DecodeDict = dict:from_list(DecodeList),
             EncodeDict = dict:from_list([{Value, Key} || {Key, Value} <- DecodeList]),
             ok = file:write_file(Binname, term_to_binary({{DecodeUndefinedSet, DecodeLeadByteSet, DecodeDict}, {EncodeDict}})),
-            init()
+            init(Mod)
     end.
 
 process_encode_options(Options) when is_list(Options) ->
@@ -63,13 +64,14 @@ process_encode_options1([Option | OptionsTail], OptionDict) ->
 			{error, {cannot_encode, [{reason, unknown_option}, {option, UnknownOption}]}}
 	end.
  
-encode(Unicode) when is_list(Unicode) ->
-    encode(Unicode, [strict]).
+encode(Mod, Unicode) when is_atom(Mod), is_list(Unicode) ->
+    encode(Mod, Unicode, [strict]).
 
-encode(Unicode, Options) when is_list(Unicode), is_list(Options) ->
+encode(Mod, Unicode, Options) when is_atom(Mod), is_list(Unicode), is_list(Options) ->
+	{_MB_MODULE, PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = Mod:config(), 
 	case process_encode_options(Options) of
 		{ok, OptionDict} ->
-			case erlang:get(?PROCESS_DICT_ATOM) of
+			case erlang:get(PROCESS_DICT_ATOM) of
 				{_, {EncodeDict}} ->
 					EncodeProfile = #encode_profile{encode_dict        = EncodeDict,
 													output             = dict:fetch(output, OptionDict),
@@ -129,13 +131,14 @@ process_decode_options1([Option | OptionsTail], OptionDict) ->
 			{error, {cannot_decode, [{reason, unknown_option}, {option, UnknownOption}]}}	
 	end.
 
-decode(Binary) when is_bitstring(Binary) ->
-    decode(Binary, [strict]).
+decode(Mod, Binary) when is_atom(Mod), is_bitstring(Binary) ->
+    decode(Mod, Binary, [strict]).
 
-decode(Binary, Options) when is_bitstring(Binary), is_list(Options) ->
+decode(Mod, Binary, Options) when is_atom(Mod), is_bitstring(Binary), is_list(Options) ->
+	{_MB_MODULE, PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = Mod:config(), 
 	case process_decode_options(Options) of
 		{ok, OptionDict} ->
-			case erlang:get(?PROCESS_DICT_ATOM) of
+			case erlang:get(PROCESS_DICT_ATOM) of
 				{{DecodeUndefinedSet, DecodeLeadByteSet, DecodeDict}, _} ->
 					DecodeProfile = #decode_profile{undefined_set      = DecodeUndefinedSet, 
 													leadbytes_set      = DecodeLeadByteSet, 

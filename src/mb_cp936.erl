@@ -1,9 +1,21 @@
 -module(mb_cp936).
--export([init/0, decode/1, decode/2, encode/1, encode/2]).
-%-compile(export_all).
+-export([config/0, init/0, decode/1, decode/2, encode/1, encode/2]).
 
--define(PROCESS_DICT_ATOM, mb_codecs_dbcs_cp936).
--define(TXTNAME, "CP936.CONF").
--define(BINNAME, "CP936.BIN").
+config() ->
+	{mb, mb_codecs_dbcs_cp936, "CP936.CONF", "CP936.BIN"}.
+	
+init() ->
+	mb_dbcs:init(?MODULE).
 
--include("mb_dbcs.erl").
+encode(Unicode) when is_list(Unicode) ->
+    mb_dbcs:encode(?MODULE, Unicode).
+
+encode(Unicode, Options) when is_list(Unicode), is_list(Options) ->
+	mb_dbcs:encode(?MODULE, Unicode, Options).
+
+decode(Binary) when is_bitstring(Binary) ->
+    mb_dbcs:decode(?MODULE, Binary).
+
+decode(Binary, Options) when is_bitstring(Binary), is_list(Options) ->
+	mb_dbcs:decode(?MODULE, Binary, Options).
+	
