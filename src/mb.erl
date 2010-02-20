@@ -56,6 +56,7 @@ init(utf8) ->
 init() ->
     init(cp950),
     init(cp936),
+	init(cp932),
     init(utf8).
 
 %% ---------------------------------------------------------------------
@@ -91,6 +92,8 @@ encode(Unicode, Encoding, Options) when is_list(Unicode), is_atom(Encoding), is_
 			mb_cp950:encode(Unicode, Options);
 		big5 ->
 			mb_cp950:encode(Unicode, Options);
+		cp932 ->
+			mb_cp932:encode(Unicode, Options);
 		Encoding ->
 			{error, {cannot_encode, [{reson, illegal_encoding}]}}
 	end.
@@ -137,6 +140,8 @@ decode(Binary, Encoding, Options) when is_binary(Binary), is_atom(Encoding), is_
 			mb_cp950:decode(Binary, Options);
 		big5 ->
 			mb_cp950:decode(Binary, Options);
+		cp932 ->
+			mb_cp932:decode(Binary, Options);
 		Encoding ->
 			{error, {cannot_decode, [{reson, illegal_encoding}]}}
 	end.
