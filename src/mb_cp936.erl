@@ -1,7 +1,10 @@
 -module(mb_cp936).
--export([config/0, init/0, decode/1, decode/2, encode/1, encode/2]).
+-export([encodings/0, codecs_config/0, init/0, decode/1, decode/2, encode/1, encode/2]).
 
-config() ->
+encodings() ->
+	[cp936, '936', gbk].
+
+codecs_config() ->
 	{mb, mb_codecs_dbcs_cp936, "CP936.CONF", "CP936.BIN"}.
 	
 init() ->

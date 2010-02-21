@@ -17,7 +17,8 @@
 %% %CopyrightEnd%
 %%
 -module(mb).
--export([init/0, init/1, decode/2, decode/3, encode/2, encode/3]).
+-export([modules/0, init/0, decode/2, decode/3, encode/2, encode/3]).
+-define(CODECS, mb_codecs).
 
 %%---------------------------------------------------------------------------
 
@@ -34,28 +35,19 @@
 %%
 modules() ->
 	[
-	{mb_cp936,   [cp936, gbk]},
-	{mb_cp932,   [cp932]},
-	{mb_cp950,   [cp950, big5]},
-	{mb_utf8,    [utf8]},
-	{mb_utf16,   [utf16]},
-	{mb_utf16le, [utf16le]},
-	{mb_utf16be, [utf16be]},
-	{mb_utf32,   [utf32]},
-	{mb_utf32le, [utf32le]},
-	{mb_utf32be, [utf32be]}
+	mb_cp936,   
+	mb_cp932,   
+	mb_cp950,   
+	mb_utf8,    
+	mb_utf16,   
+	mb_utf16le, 
+	mb_utf16be, 
+	mb_utf32,   
+	mb_utf32le, 
+	mb_utf32be 
 	].
-
-%% @spec init(Mod::atom()) -> ok
-%%
-%% @doc Load <code>Mod</code> codecs to process dict memory, Return ok.
-%%
-%% @see init/0
-
--spec init(Mod::atom()) -> ok.
-
-init(Mod) when is_atom(Mod) ->
-    Mod:init().
+	
+%%---------------------------------------------------------------------------
 
 %% @spec init() -> ok
 %%
@@ -66,10 +58,22 @@ init(Mod) when is_atom(Mod) ->
 -spec init() -> ok.
 
 init() ->
-    lists:foreach(fun({Mod, _}) ->
+    lists:foreach(fun(Mod) ->
 						Mod:init()
 					end,
-					modules()).
+					modules()),
+	CodecsDict = lists:foldl(fun(Mod, Dict) ->
+								Encodings = Mod:encodings(),
+								lists:foldl(fun(Encoding, D) ->
+												dict:store(Encoding, Mod, D)
+											end,
+											Dict,
+											Encodings)
+							end,
+							dict:new(),
+							modules()),
+	erlang:put(?CODECS, CodecsDict),
+	ok.
 
 %% ---------------------------------------------------------------------
 
@@ -93,33 +97,12 @@ encode(Unicode, Encoding) when is_list(Unicode), is_atom(Encoding) ->
 -spec encode(Unicode::unicode(), Encoding::encoding(), Options::options()) -> binary() | string().
 
 encode(Unicode, Encoding, Options) when is_list(Unicode), is_atom(Encoding), is_list(Options) ->
-	case Encoding of
-		utf8 ->
-			mb_utf8:encode(Unicode, Options);
-		cp936 ->
-			mb_cp936:encode(Unicode, Options);
-		gbk ->
-			mb_cp936:encode(Unicode, Options);
-		cp950 ->
-			mb_cp950:encode(Unicode, Options);
-		big5 ->
-			mb_cp950:encode(Unicode, Options);
-		cp932 ->
-			mb_cp932:encode(Unicode, Options);
-		utf16 ->
-			mb_utf16:encode(Unicode, Options);
-		utf16le ->
-			mb_utf16le:encode(Unicode, Options);
-		utf16be ->
-			mb_utf16be:encode(Unicode, Options);
-		utf32 ->
-			mb_utf32:encode(Unicode, Options);
-		utf32le ->
-			mb_utf32le:encode(Unicode, Options);
-		utf32be ->
-			mb_utf32be:encode(Unicode, Options);
-		Encoding ->
-			{error, {cannot_encode, [{reson, illegal_encoding}]}}
+	CodecsDict = erlang:get(?CODECS),
+	case catch dict:fetch(Encoding, CodecsDict) of
+		{'EXIT',{badarg, _}} ->
+			{error, {cannot_encode, [{reson, illegal_encoding}]}};
+		Mod ->
+			Mod:encode(Unicode, Options)
 	end.
 
 %% ---------------------------------------------------------------------
@@ -153,19 +136,10 @@ decode(String, Encoding, Options) when is_list(String), is_atom(Encoding), is_li
             decode(Binary, Encoding, Options)
     end;
 decode(Binary, Encoding, Options) when is_binary(Binary), is_atom(Encoding), is_list(Options) ->
-	case Encoding of
-		utf8 ->
-			mb_utf8:decode(Binary, Options);
-		cp936 ->
-			mb_cp936:decode(Binary, Options);
-		gbk ->
-			mb_cp936:decode(Binary, Options);
-		cp950 ->
-			mb_cp950:decode(Binary, Options);
-		big5 ->
-			mb_cp950:decode(Binary, Options);
-		cp932 ->
-			mb_cp932:decode(Binary, Options);
-		Encoding ->
-			{error, {cannot_decode, [{reson, illegal_encoding}]}}
+	CodecsDict = erlang:get(?CODECS),
+	case catch dict:fetch(Encoding, CodecsDict) of
+		{'EXIT',{badarg, _}} ->
+			{error, {cannot_encode, [{reson, illegal_encoding}]}};
+		Mod ->
+			Mod:decode(Binary, Options)
 	end.

@@ -1,7 +1,10 @@
 -module(mb_cp932).
--export([config/0, init/0, decode/1, decode/2, encode/1, encode/2]).
+-export([encodings/0, codecs_config/0, init/0, decode/1, decode/2, encode/1, encode/2]).
 
-config() ->
+encodings() ->
+	[cp932, '932'].
+
+codecs_config() ->
 	{mb, mb_codecs_dbcs_cp932, "CP932.CONF", "CP932.BIN"}.
 
 init() ->

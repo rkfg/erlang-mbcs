@@ -1,7 +1,10 @@
 -module(mb_utf16).
--export([config/0, init/0, decode/1, decode/2, encode/1, encode/2]).
+-export([encodings/0, codecs_config/0, init/0, decode/1, decode/2, encode/1, encode/2]).
 
-config() ->
+encodings() ->
+	[utf16].
+
+codecs_config() ->
 	{mb, utf16}.
 
 init() ->

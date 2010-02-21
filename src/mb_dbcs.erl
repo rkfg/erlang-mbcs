@@ -20,7 +20,7 @@
 -define(DECODE_ERROR_REPLACE_CHAR, 16#FFFD).   % default replace char
 
 init(Mod) ->
-	{MB_MODULE, PROCESS_DICT_ATOM, CONF_NAME, BIN_NAME} = Mod:config(), 
+	{MB_MODULE, PROCESS_DICT_ATOM, CONF_NAME, BIN_NAME} = Mod:codecs_config(), 
     Path = code:priv_dir(MB_MODULE),
     Txtname = filename:join(Path, CONF_NAME),
     Binname = filename:join(Path, BIN_NAME),
@@ -68,7 +68,7 @@ encode(Mod, Unicode) when is_atom(Mod), is_list(Unicode) ->
     encode(Mod, Unicode, [strict]).
 
 encode(Mod, Unicode, Options) when is_atom(Mod), is_list(Unicode), is_list(Options) ->
-	{_MB_MODULE, PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = Mod:config(), 
+	{_MB_MODULE, PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = Mod:codecs_config(), 
 	case process_encode_options(Options) of
 		{ok, OptionDict} ->
 			case erlang:get(PROCESS_DICT_ATOM) of
@@ -135,7 +135,7 @@ decode(Mod, Binary) when is_atom(Mod), is_bitstring(Binary) ->
     decode(Mod, Binary, [strict]).
 
 decode(Mod, Binary, Options) when is_atom(Mod), is_bitstring(Binary), is_list(Options) ->
-	{_MB_MODULE, PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = Mod:config(), 
+	{_MB_MODULE, PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = Mod:codecs_config(), 
 	case process_decode_options(Options) of
 		{ok, OptionDict} ->
 			case erlang:get(PROCESS_DICT_ATOM) of
