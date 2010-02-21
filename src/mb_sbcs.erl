@@ -129,10 +129,10 @@ process_decode_options1([Option | OptionsTail], OptionDict) ->
 			{error, {cannot_decode, [{reason, unknown_option}, {option, UnknownOption}]}}	
 	end.
 
-decode(Mod, Binary) when is_atom(Mod), is_bitstring(Binary) ->
+decode(Mod, Binary) when is_atom(Mod), is_binary(Binary) ->
     decode(Mod, Binary, [strict]).
 
-decode(Mod, Binary, Options) when is_atom(Mod), is_bitstring(Binary), is_list(Options) ->
+decode(Mod, Binary, Options) when is_atom(Mod), is_binary(Binary), is_list(Options) ->
 	{_MB_MODULE, PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = Mod:codecs_config(), 
 	case process_decode_options(Options) of
 		{ok, OptionDict} ->
@@ -152,7 +152,7 @@ decode(Mod, Binary, Options) when is_atom(Mod), is_bitstring(Binary), is_list(Op
 
 decode1(<<>>, _, _, Unicode) when is_list(Unicode) ->
     lists:reverse(Unicode);
-decode1(<<Byte:8, Rest/bitstring>>, #decode_profile{undefined_set=UndefinedSet, decode_dict=DecodeDict, error=Error, error_replace_char=ErrorReplaceChar}=DecodeProfile, Pos, Unicode) when is_integer(Pos), is_list(Unicode) ->
+decode1(<<Byte:8, Rest/binary>>, #decode_profile{undefined_set=UndefinedSet, decode_dict=DecodeDict, error=Error, error_replace_char=ErrorReplaceChar}=DecodeProfile, Pos, Unicode) when is_integer(Pos), is_list(Unicode) ->
     case sets:is_element(Byte, UndefinedSet) of
         true ->
             case Error of

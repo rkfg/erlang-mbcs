@@ -9,7 +9,13 @@ encode(Mod, Unicode) when is_atom(Mod), is_list(Unicode) ->
 
 encode(Mod, Unicode, Options) when is_atom(Mod), is_list(Unicode), is_list(Options) ->
 	{mb, Encoding} = Mod:codecs_config(),
-    unicode:characters_to_binary(Unicode, unicode, Encoding).
+    Binary = unicode:characters_to_binary(Unicode, unicode, Encoding),
+	case lists:member(list, Options) of
+		true ->
+			erlang:binary_to_list(Binary);
+		false ->
+			Binary
+	end.
 
 decode(Mod, Binary) when is_atom(Mod), is_binary(Binary) ->
     decode(Binary, [strict]).

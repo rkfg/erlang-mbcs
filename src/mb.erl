@@ -23,16 +23,19 @@
 %%---------------------------------------------------------------------------
 
 -type unicode()  :: [non_neg_integer()].
--type encoding() :: 'cp874' | 'cp936' | 'gbk' | 'cp950' | 'big5' | 'utf8' | 'utf16' | 'utf16le' | 'utf16be' | 'utf32' | 'utf32le' | 'utf32be'.
+-type encoding() :: 'cp874' | 'cp_874' | 'iso8859_11' | 'iso_8859_11' | 'cp932'| 'cp_932' | 'cp936' | 'cp_936'| 'gbk' | 'cp949' | 'cp_949'| 'cp950' | 'cp_950' | 'big5' | 'utf8' | 'utf16' | 'utf16le' | 'utf16be' | 'utf32' | 'utf32le' | 'utf32be'.
 -type option()   :: 'list' | 'binary' | 'ignore' | 'strict' | 'replace' | {replace, non_neg_integer()}.
 -type options()  :: [option()].
 
 %%---------------------------------------------------------------------------
 
-%% @spec modules() -> [{module, [Encoding]}].
+%% @spec modules() -> [module].
 %%
-%% @doc Return [{module, [Encoding]}].
+%% @doc Return [module].
 %%
+
+-spec modules() -> [atom()].
+
 modules() ->
 	[
 	mb_cp874,
@@ -124,7 +127,7 @@ encode(Unicode, Encoding, Options) when is_list(Unicode), is_atom(Encoding), is_
 
 decode(String, Encoding) when is_list(String), is_atom(Encoding) ->
     decode(String, Encoding, [strict]);
-decode(Binary, Encoding) when is_bitstring(Binary), is_atom(Encoding) ->
+decode(Binary, Encoding) when is_binary(Binary), is_atom(Encoding) ->
     decode(Binary, Encoding, [strict]).
 
 %% @spec decode(String::string()|binary(), Encoding::encoding(), Options::options()) -> unicode()
