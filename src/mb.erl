@@ -23,7 +23,7 @@
 %%---------------------------------------------------------------------------
 
 -type unicode()  :: [non_neg_integer()].
--type encoding() :: 'cp936' | 'gbk' | 'cp950' | 'big5' | 'utf8' | 'utf16' | 'utf16le' | 'utf16be' | 'utf32' | 'utf32le' | 'utf32be'.
+-type encoding() :: 'cp874' | 'cp936' | 'gbk' | 'cp950' | 'big5' | 'utf8' | 'utf16' | 'utf16le' | 'utf16be' | 'utf32' | 'utf32le' | 'utf32be'.
 -type option()   :: 'list' | 'binary' | 'ignore' | 'strict' | 'replace' | {replace, non_neg_integer()}.
 -type options()  :: [option()].
 
@@ -38,14 +38,15 @@ modules() ->
 	mb_cp874,
 	mb_cp936,   
 	mb_cp932,   
-	mb_cp950,   
+	mb_cp950,
+	mb_gb18030,
 	mb_utf8,    
 	mb_utf16,   
 	mb_utf16le, 
 	mb_utf16be, 
 	mb_utf32,
 	mb_utf32le, 
-	mb_utf32be 
+	mb_utf32be
 	].
 	
 %%---------------------------------------------------------------------------
