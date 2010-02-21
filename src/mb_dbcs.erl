@@ -78,8 +78,8 @@ encode(Mod, Unicode, Options) when is_atom(Mod), is_list(Unicode), is_list(Optio
 													error              = dict:fetch(error, OptionDict),
 													error_replace_char = dict:fetch(error_replace_char, OptionDict)},
 					encode1(Unicode, EncodeProfile, 1, []);
-				ProcessDict ->
-					{error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, ProcessDict}, {detail, "maybe you should call mb:init() first"}]}}
+				_OtherDict ->
+					{error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, PROCESS_DICT_ATOM}, {detail, "maybe you should call mb:init() first"}]}}
 			end;
 		{error, Reason} ->
 			{error, Reason}
@@ -146,8 +146,8 @@ decode(Mod, Binary, Options) when is_atom(Mod), is_bitstring(Binary), is_list(Op
 													error              = dict:fetch(error, OptionDict),
 													error_replace_char = dict:fetch(error_replace_char, OptionDict)},
 					decode1(Binary, DecodeProfile, 1, []);
-				ProcessDict ->
-					{error, {cannot_decode, [{reson, illegal_process_dict}, {process_dict, ProcessDict}, {detail, "maybe you should call mb:init() first"}]}}
+				_OtherDict ->
+					{error, {cannot_decode, [{reson, illegal_process_dict}, {process_dict, PROCESS_DICT_ATOM}, {detail, "maybe you should call mb:init() first"}]}}
 			end;
 		{error, Reason} ->
 			{error, Reason}

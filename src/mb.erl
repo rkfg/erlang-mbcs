@@ -42,7 +42,7 @@ modules() ->
 	mb_utf16,   
 	mb_utf16le, 
 	mb_utf16be, 
-	mb_utf32,   
+	mb_utf32,
 	mb_utf32le, 
 	mb_utf32be 
 	].
@@ -97,12 +97,16 @@ encode(Unicode, Encoding) when is_list(Unicode), is_atom(Encoding) ->
 -spec encode(Unicode::unicode(), Encoding::encoding(), Options::options()) -> binary() | string().
 
 encode(Unicode, Encoding, Options) when is_list(Unicode), is_atom(Encoding), is_list(Options) ->
-	CodecsDict = erlang:get(?CODECS),
-	case catch dict:fetch(Encoding, CodecsDict) of
-		{'EXIT',{badarg, _}} ->
-			{error, {cannot_encode, [{reson, illegal_encoding}]}};
-		Mod ->
-			Mod:encode(Unicode, Options)
+	case erlang:get(?CODECS) of
+		undefined ->
+			{error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, ?CODECS}, {detail, "maybe you should call mb:init() first"}]}};
+		CodecsDict ->
+			case catch dict:fetch(Encoding, CodecsDict) of
+				{'EXIT',{badarg, _}} ->
+					{error, {cannot_encode, [{reson, illegal_encoding}, {encoding, Encoding}]}};
+				Mod ->
+					Mod:encode(Unicode, Options)
+			end
 	end.
 
 %% ---------------------------------------------------------------------
@@ -131,15 +135,19 @@ decode(Binary, Encoding) when is_bitstring(Binary), is_atom(Encoding) ->
 decode(String, Encoding, Options) when is_list(String), is_atom(Encoding), is_list(Options) ->
     case catch list_to_binary(String) of
         {'EXIT',{badarg, _}} ->
-            {error, {cannot_decode, [{reson, illegal_list}]}};
+            {error, {cannot_decode, [{reson, illegal_list}, {list, String}]}};
         Binary ->
             decode(Binary, Encoding, Options)
     end;
 decode(Binary, Encoding, Options) when is_binary(Binary), is_atom(Encoding), is_list(Options) ->
-	CodecsDict = erlang:get(?CODECS),
-	case catch dict:fetch(Encoding, CodecsDict) of
-		{'EXIT',{badarg, _}} ->
-			{error, {cannot_encode, [{reson, illegal_encoding}]}};
-		Mod ->
-			Mod:decode(Binary, Options)
+	case erlang:get(?CODECS) of
+		undefined ->
+			{error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, ?CODECS}, {detail, "maybe you should call mb:init() first"}]}};
+		CodecsDict ->
+			case catch dict:fetch(Encoding, CodecsDict) of
+				{'EXIT',{badarg, _}} ->
+					{error, {cannot_encode, [{reson, illegal_encoding}, {encoding, Encoding}]}};
+				Mod ->
+					Mod:decode(Binary, Options)
+			end
 	end.
