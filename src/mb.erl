@@ -22,28 +22,40 @@
 %%---------------------------------------------------------------------------
 
 -type unicode()  :: [non_neg_integer()].
--type encoding() :: 'cp936' | 'gbk' | 'cp950' | 'big5' | 'utf8'.
+-type encoding() :: 'cp936' | 'gbk' | 'cp950' | 'big5' | 'utf8' | 'utf16' | 'utf16le' | 'utf16be' | 'utf32' | 'utf32le' | 'utf32be'.
 -type option()   :: 'list' | 'binary' | 'ignore' | 'strict' | 'replace' | {replace, non_neg_integer()}.
 -type options()  :: [option()].
 
 %%---------------------------------------------------------------------------
 
-%% @spec init(Encoding::encoding()) -> ok
+%% @spec modules() -> [{module, [Encoding]}].
 %%
-%% @doc Load <code>Encoding</code> codecs to process dict memory, Return ok.
+%% @doc Return [{module, [Encoding]}].
+%%
+modules() ->
+	[
+	{mb_cp936,   [cp936, gbk]},
+	{mb_cp932,   [cp932]},
+	{mb_cp950,   [cp950, big5]},
+	{mb_utf8,    [utf8]},
+	{mb_utf16,   [utf16]},
+	{mb_utf16le, [utf16le]},
+	{mb_utf16be, [utf16be]},
+	{mb_utf32,   [utf32]},
+	{mb_utf32le, [utf32le]},
+	{mb_utf32be, [utf32be]}
+	].
+
+%% @spec init(Mod::atom()) -> ok
+%%
+%% @doc Load <code>Mod</code> codecs to process dict memory, Return ok.
 %%
 %% @see init/0
 
--spec init(Encoding::encoding()) -> ok.
+-spec init(Mod::atom()) -> ok.
 
-init(cp936) ->
-    mb_cp936:init();
-init(cp950) ->
-    mb_cp950:init();
-init(cp932) ->
-    mb_cp932:init();
-init(utf8) ->
-    mb_utf8:init().
+init(Mod) when is_atom(Mod) ->
+    Mod:init().
 
 %% @spec init() -> ok
 %%
@@ -54,10 +66,10 @@ init(utf8) ->
 -spec init() -> ok.
 
 init() ->
-    init(cp950),
-    init(cp936),
-	init(cp932),
-    init(utf8).
+    lists:foreach(fun({Mod, _}) ->
+						Mod:init()
+					end,
+					modules()).
 
 %% ---------------------------------------------------------------------
 
@@ -94,6 +106,18 @@ encode(Unicode, Encoding, Options) when is_list(Unicode), is_atom(Encoding), is_
 			mb_cp950:encode(Unicode, Options);
 		cp932 ->
 			mb_cp932:encode(Unicode, Options);
+		utf16 ->
+			mb_utf16:encode(Unicode, Options);
+		utf16le ->
+			mb_utf16le:encode(Unicode, Options);
+		utf16be ->
+			mb_utf16be:encode(Unicode, Options);
+		utf32 ->
+			mb_utf32:encode(Unicode, Options);
+		utf32le ->
+			mb_utf32le:encode(Unicode, Options);
+		utf32be ->
+			mb_utf32be:encode(Unicode, Options);
 		Encoding ->
 			{error, {cannot_encode, [{reson, illegal_encoding}]}}
 	end.

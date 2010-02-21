@@ -1,8 +1,8 @@
--module(mb_utf8).
+-module(mb_utf16).
 -export([config/0, init/0, decode/1, decode/2, encode/1, encode/2]).
 
 config() ->
-	{mb, utf8}.
+	{mb, utf16}.
 
 init() ->
 	mb_unicode:init(?MODULE).
