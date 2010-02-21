@@ -3,4 +3,5 @@
 @for %%I in (*.erl) do (
     erlc +debug_info -o ../ebin %%I)
 )
+erl -noshell -s mb init -s init stop
 pause

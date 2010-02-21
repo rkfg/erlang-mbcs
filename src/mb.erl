@@ -37,7 +37,8 @@ modules() ->
 	[
 	mb_cp874,
 	mb_cp936,   
-	mb_cp932,   
+	mb_cp932,
+	mb_cp949,
 	mb_cp950,
 	mb_gb18030,
 	mb_utf8,    
