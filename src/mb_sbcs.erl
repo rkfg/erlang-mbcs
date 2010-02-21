@@ -1,5 +1,5 @@
 %% User-defined behaviour module
--module(mb_dbcs).
+-module(mb_sbcs).
 -export([init/1, decode/2, decode/3, encode/2, encode/3]).
 
 -record(encode_profile, {
@@ -12,7 +12,6 @@
 
 -record(decode_profile, {
       undefined_set      :: set(),             % undefined char set
-      leadbytes_set      :: set(),             % lead bytes set
       decode_dict        :: dict(),            % decode mapping dict
       error              :: atom(),            % error option
 	  error_replace_char :: non_neg_integer()  % error replace char
@@ -31,12 +30,11 @@ init(Mod) ->
             ok;
         false ->
             {ok, [PropList]} = file:consult(Txtname),
-            DecodeUndefinedSet = sets:from_list(proplists:get_value(undefined,PropList)),
-            DecodeLeadByteSet = sets:from_list(proplists:get_value(leadbytes,PropList)),
-            DecodeList = proplists:get_value(mapping,PropList),
+			DecodeUndefinedSet = sets:from_list(proplists:get_value(undefined,PropList)),
+            DecodeList = proplists:get_value(mapping, PropList),
             DecodeDict = dict:from_list(DecodeList),
             EncodeDict = dict:from_list([{Value, Key} || {Key, Value} <- DecodeList]),
-            ok = file:write_file(Binname, term_to_binary({{DecodeUndefinedSet, DecodeLeadByteSet, DecodeDict}, {EncodeDict}})),
+            ok = file:write_file(Binname, term_to_binary({{DecodeUndefinedSet, DecodeDict}, {EncodeDict}})),
             init(Mod)
     end.
 
@@ -139,9 +137,8 @@ decode(Mod, Binary, Options) when is_atom(Mod), is_bitstring(Binary), is_list(Op
 	case process_decode_options(Options) of
 		{ok, OptionDict} ->
 			case erlang:get(PROCESS_DICT_ATOM) of
-				{{DecodeUndefinedSet, DecodeLeadByteSet, DecodeDict}, _} ->
+				{{DecodeUndefinedSet, DecodeDict}, _} ->
 					DecodeProfile = #decode_profile{undefined_set      = DecodeUndefinedSet, 
-													leadbytes_set      = DecodeLeadByteSet, 
 													decode_dict        = DecodeDict, 
 													error              = dict:fetch(error, OptionDict),
 													error_replace_char = dict:fetch(error_replace_char, OptionDict)},
@@ -155,8 +152,8 @@ decode(Mod, Binary, Options) when is_atom(Mod), is_bitstring(Binary), is_list(Op
 
 decode1(<<>>, _, _, Unicode) when is_list(Unicode) ->
     lists:reverse(Unicode);
-decode1(<<LeadByte:8, Rest/bitstring>>, #decode_profile{undefined_set=UndefinedSet, leadbytes_set=LeadbytesSet, decode_dict=DecodeDict, error=Error, error_replace_char=ErrorReplaceChar}=DecodeProfile, Pos, Unicode) when is_integer(Pos), is_list(Unicode) ->
-    case sets:is_element(LeadByte, UndefinedSet) of
+decode1(<<Byte:8, Rest/bitstring>>, #decode_profile{undefined_set=UndefinedSet, decode_dict=DecodeDict, error=Error, error_replace_char=ErrorReplaceChar}=DecodeProfile, Pos, Unicode) when is_integer(Pos), is_list(Unicode) ->
+    case sets:is_element(Byte, UndefinedSet) of
         true ->
             case Error of
                 ignore ->
@@ -164,51 +161,20 @@ decode1(<<LeadByte:8, Rest/bitstring>>, #decode_profile{undefined_set=UndefinedS
                 replace ->
                     decode1(Rest, DecodeProfile, Pos+1, [ErrorReplaceChar | Unicode]);
                 strict ->
-                    {error, {cannot_decode, [{reason, undefined_character}, {character, LeadByte}, {pos, Pos}]}}
+                    {error, {cannot_decode, [{reason, undefined_character}, {character, Byte}, {pos, Pos}]}}
             end;
-        false ->
-            case sets:is_element(LeadByte, LeadbytesSet) of
-                false ->
-                    case catch dict:fetch(LeadByte, DecodeDict) of
-                        {'EXIT',{badarg, _}} ->
-                            case Error of
-                                ignore ->
-                                    decode1(Rest, DecodeProfile, Pos+1, Unicode);
-                                replace ->
-                                    decode1(Rest, DecodeProfile, Pos+1, [ErrorReplaceChar | Unicode]);
-                                strict ->
-                                    {error, {cannot_decode, [{reason, unmapping_character}, {character, LeadByte}, {pos, Pos}]}}
-                            end;
-                        Code ->
-                            decode1(Rest, DecodeProfile, Pos+1, [Code | Unicode])
-                    end;
-                true ->
-                    case erlang:bit_size(Rest) =:= 0 of
-                        false ->
-                            <<FollowByte:8, Rest1/bitstring>> = Rest,
-                            MultibyteChar = LeadByte bsl 8 bor FollowByte,
-                            case catch dict:fetch(MultibyteChar, DecodeDict) of
-                                {'EXIT',{badarg, _}} ->
-                                    case Error of
-                                        ignore ->
-                                            decode1(Rest1, DecodeProfile, Pos+2, Unicode);
-                                        replace ->
-                                            decode1(Rest1, DecodeProfile, Pos+2, [ErrorReplaceChar | Unicode]);
-                                        strict ->
-                                            {error, {cannot_decode, [{reason, unmapping_multibyte_character}, {multibyte_character, MultibyteChar}, {pos, Pos}]}}
-                                    end;
-                                Code ->
-                                    decode1(Rest1, DecodeProfile, Pos+2, [Code | Unicode])
-                            end;
-                        true ->
-                            case Error of
-                                ignore ->
-                                    decode1(Rest, DecodeProfile, Pos+1, Unicode);
-                                replace ->
-                                    decode1(Rest, DecodeProfile, Pos+1, [ErrorReplaceChar | Unicode]);
-                                strict ->
-                                    {error, {cannot_decode, [{reason, incomplete_multibyte_sequence}, {leadbyte, LeadByte}, {pos, Pos}]}}
-                            end
-                    end
-            end
-    end.
+        false ->	
+			case catch dict:fetch(Byte, DecodeDict) of
+				{'EXIT',{badarg, _}} ->
+					case Error of
+						ignore ->
+							decode1(Rest, DecodeProfile, Pos+1, Unicode);
+						replace ->
+							decode1(Rest, DecodeProfile, Pos+1, [ErrorReplaceChar | Unicode]);
+						strict ->
+							{error, {cannot_encode, [{reason, unmapping_character}, {character, Byte}, {pos, Pos}]}}
+					end;
+				Char ->
+					decode1(Rest, DecodeProfile, Pos+1, [Char | Unicode])
+			end
+	end.
