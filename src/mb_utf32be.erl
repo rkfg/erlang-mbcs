@@ -5,14 +5,17 @@ encodings() ->
 	[utf32be].
 
 codecs_config() ->
-	{mb, {utf32,big}}.
+	{mb, mb_unicode, {utf32, big}, undefined, undefined}.
 
 init() ->
-	mb_unicode:init(?MODULE).
+	{mb, MbImpMod, _, _, _} = codecs_config(),
+	MbImpMod:init(?MODULE).
 
 encode(Unicode, Options) when is_list(Unicode), is_list(Options) ->
-	mb_unicode:encode(?MODULE, Unicode, Options).
+	{mb, MbImpMod, _, _, _} = codecs_config(),
+	MbImpMod:encode(?MODULE, Unicode, Options).
 
 decode(Binary, Options) when is_binary(Binary), is_list(Options) ->
-	mb_unicode:decode(?MODULE, Binary, Options).
+	{mb, MbImpMod, _, _, _} = codecs_config(),
+	MbImpMod:decode(?MODULE, Binary, Options).
 	

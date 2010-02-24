@@ -5,14 +5,16 @@ encodings() ->
 	[cp874, cp_874, iso8859_11, iso_8859_11].
 
 codecs_config() ->
-	{mb, mb_codecs_dbcs_cp874, "CP874.CONF", "CP874.BIN"}.
+	{mb, mb_sbcs, mb_codecs_dbcs_cp874, "CP874.CONF", "CP874.BIN"}.
 
 init() ->
-	mb_sbcs:init(?MODULE).
+	{mb, MbImpMod, _, _, _} = codecs_config(),
+	MbImpMod:init(?MODULE).
 
 encode(Unicode, Options) when is_list(Unicode), is_list(Options) ->
-	mb_sbcs:encode(?MODULE, Unicode, Options).
+	{mb, MbImpMod, _, _, _} = codecs_config(),
+	MbImpMod:encode(?MODULE, Unicode, Options).
 
 decode(Binary, Options) when is_binary(Binary), is_list(Options) ->
-	mb_sbcs:decode(?MODULE, Binary, Options).
-	
+	{mb, MbImpMod, _, _, _} = codecs_config(),
+	MbImpMod:decode(?MODULE, Binary, Options).

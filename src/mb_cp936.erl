@@ -5,14 +5,17 @@ encodings() ->
 	[cp936, cp_936, gbk].
 
 codecs_config() ->
-	{mb, mb_codecs_dbcs_cp936, "CP936.CONF", "CP936.BIN"}.
+	{mb, mb_dbcs, mb_codecs_dbcs_cp936, "CP936.CONF", "CP936.BIN"}.
 	
 init() ->
-	mb_dbcs:init(?MODULE).
+	{mb, MbImpMod, _, _, _} = codecs_config(),
+	MbImpMod:init(?MODULE).
 
 encode(Unicode, Options) when is_list(Unicode), is_list(Options) ->
-	mb_dbcs:encode(?MODULE, Unicode, Options).
+	{mb, MbImpMod, _, _, _} = codecs_config(),
+	MbImpMod:encode(?MODULE, Unicode, Options).
 
 decode(Binary, Options) when is_binary(Binary), is_list(Options) ->
-	mb_dbcs:decode(?MODULE, Binary, Options).
+	{mb, MbImpMod, _, _, _} = codecs_config(),
+	MbImpMod:decode(?MODULE, Binary, Options).
 	

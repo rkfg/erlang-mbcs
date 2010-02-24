@@ -5,14 +5,17 @@ encodings() ->
 	[cp950, cp_950, big5].
 
 codecs_config() ->
-	{mb, mb_codecs_dbcs_cp950, "CP950.CONF", "CP950.BIN"}.
+	{mb, mb_dbcs, mb_codecs_dbcs_cp950, "CP950.CONF", "CP950.BIN"}.
 
 init() ->
-	mb_dbcs:init(?MODULE).
+	{mb, MbImpMod, _, _, _} = codecs_config(),
+	MbImpMod:init(?MODULE).
 
 encode(Unicode, Options) when is_list(Unicode), is_list(Options) ->
-	mb_dbcs:encode(?MODULE, Unicode, Options).
+	{mb, MbImpMod, _, _, _} = codecs_config(),
+	MbImpMod:encode(?MODULE, Unicode, Options).
 
 decode(Binary, Options) when is_binary(Binary), is_list(Options) ->
-	mb_dbcs:decode(?MODULE, Binary, Options).
+	{mb, MbImpMod, _, _, _} = codecs_config(),
+	MbImpMod:decode(?MODULE, Binary, Options).
 	

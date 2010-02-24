@@ -5,7 +5,7 @@ encodings() ->
 	[gb18030].
 	
 codecs_config() ->
-	{mb, mb_codecs_gb18030, "GB18030.CONF", "GB18030.BIN"}.
+	{mb, mb_gb18030, mb_codecs_gb18030, "GB18030.CONF", "GB18030.BIN"}.
 
 init() ->
 	ok.
