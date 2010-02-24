@@ -18,7 +18,9 @@ process_encode_options1([Option | OptionsTail], OptionDict) ->
 			process_encode_options1(OptionsTail, dict:store(output, list, OptionDict));
 		bom -> 
 			process_encode_options1(OptionsTail, dict:store(bom, true, OptionDict));
-		no_bom ->
+		{bom, true} -> 
+			process_encode_options1(OptionsTail, dict:store(bom, true, OptionDict));
+		{bom, false}->
 			process_encode_options1(OptionsTail, dict:store(bom, false, OptionDict));
 		UnknownOption ->
 			{error, {cannot_encode, [{reason, unknown_option}, {option, UnknownOption}]}}
