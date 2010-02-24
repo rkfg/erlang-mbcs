@@ -85,14 +85,14 @@ init() ->
 
 %% @spec encode(Unicode::unicode(), Encoding::encoding()) -> binary()
 %%
-%% @doc Equivalent to encode(Unicode, Encoding, [strict]).
+%% @doc Equivalent to encode(Unicode, Encoding, []).
 %%
 %% @see encode/3
 
 -spec encode(Unicode::unicode(), Encoding::encoding()) -> binary().
 
 encode(Unicode, Encoding) when is_list(Unicode), is_atom(Encoding) ->
-    encode(Unicode, Encoding, [strict]).
+    encode(Unicode, Encoding, []).
 
 %% @spec encode(Unicode::unicode(), Encoding::encoding(), Options::options()) -> binary() | string()
 %%
@@ -119,16 +119,16 @@ encode(Unicode, Encoding, Options) when is_list(Unicode), is_atom(Encoding), is_
 
 %% @spec decode(String::string()|binary(), Encoding::encoding()) -> unicode()
 %%
-%% @doc Equivalent to decode(String, Encoding, [strict]).
+%% @doc Equivalent to decode(String, Encoding, []).
 %%
 %% @see decode/3
 
 -spec decode(String::string()|binary(), Encoding::encoding()) -> unicode().
 
 decode(String, Encoding) when is_list(String), is_atom(Encoding) ->
-    decode(String, Encoding, [strict]);
+    decode(String, Encoding, []);
 decode(Binary, Encoding) when is_binary(Binary), is_atom(Encoding) ->
-    decode(Binary, Encoding, [strict]).
+    decode(Binary, Encoding, []).
 
 %% @spec decode(String::string()|binary(), Encoding::encoding(), Options::options()) -> unicode()
 %%
