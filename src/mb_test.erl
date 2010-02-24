@@ -13,7 +13,7 @@
 %% @doc Run the testcase.
 
 test() ->
-	mb:init(),
+	ok = mb:init(),
 	Unicode = "\x{4f60}\x{597d}",    % Unicode = "ÄãºÃ"
 	String  = "\xc4\xe3\xba\xc3",    % String  = "ÄãºÃ"
 	String  = mb:encode(Unicode, gbk, [list]),

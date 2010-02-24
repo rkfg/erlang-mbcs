@@ -23,7 +23,7 @@
 %%---------------------------------------------------------------------------
 
 -type unicode()  :: [non_neg_integer()].
--type encoding() :: 'cp874' | 'cp_874' | 'iso8859_11' | 'iso_8859_11' | 'cp932'| 'cp_932' | 'cp936' | 'cp_936'| 'gbk' | 'cp949' | 'cp_949'| 'cp950' | 'cp_950' | 'big5' | 'utf8' | 'utf16' | 'utf16le' | 'utf16be' | 'utf32' | 'utf32le' | 'utf32be'.
+-type encoding() :: 'cp874' | 'iso_8859_11' | 'cp932' | 'cp936' | 'gbk' | 'cp949' | 'cp950' | 'big5' | 'utf8' | 'utf16' | 'utf16le' | 'utf16be' | 'utf32' | 'utf32le' | 'utf32be'.
 -type option()   :: 'list' | 'binary' | 'ignore' | 'strict' | 'replace' | {replace, non_neg_integer()} | 'bom' | {bom, true} | {bom, false}.
 -type options()  :: [option()].
 
@@ -65,7 +65,7 @@ modules() ->
 
 init() ->
     lists:foreach(fun(Mod) ->
-						Mod:init()
+						ok = Mod:init()
 					end,
 					modules()),
 	CodecsDict = lists:foldl(fun(Mod, Dict) ->

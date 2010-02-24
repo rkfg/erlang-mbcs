@@ -9,7 +9,7 @@ codecs_config() ->
 
 init() ->
 	{mb, MbImpMod, _, _, _} = codecs_config(),
-	MbImpMod:init(?MODULE).
+	ok = MbImpMod:init(?MODULE).
 
 encode(Unicode, Options) when is_list(Unicode), is_list(Options) ->
 	{mb, MbImpMod, _, _, _} = codecs_config(),
