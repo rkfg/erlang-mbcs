@@ -1,4 +1,4 @@
-@path D:\erl5.7.4\bin;%Path%
+@path D:\erl5.7.5\bin;%Path%
 @del /f /q /s ..\ebin\*.beam ..\priv\*.BIN
 @for %%I in (*.erl) do (
     erlc +debug_info -o ../ebin %%I)

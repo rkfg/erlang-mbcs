@@ -4,18 +4,20 @@
 %% 
 %% Some simple functional test cases, test the mb implementation
 -module(mb_test).
+-export([encode/3, decode/3]).
+-include_lib("eunit/include/eunit.hrl").
 
-%Tests
--export([test/0]).
+encode(Unicode, Encoding, Options) ->
+	mb:encode(Unicode, Encoding, Options).
+	
+decode(String, Encoding, Options) ->
+	mb:decode(String, Encoding, Options).
 
-%% @spec test() -> ok
-%%
-%% @doc Run the testcase.
 
-test() ->
+mb_test_() ->
 	ok = mb:init(),
 	Unicode = "\x{4f60}\x{597d}",    % Unicode = "ÄãºÃ"
-	String  = "\xc4\xe3\xba\xc3",    % String  = "ÄãºÃ"
-	String  = mb:encode(Unicode, gbk, [list]),
-	Unicode = mb:decode(String,  gbk),
-	ok.
+	GBKString  = "\xc4\xe3\xba\xc3",    % String  = "ÄãºÃ"
+	[?_assert(encode(Unicode, gbk, [list]) =:= GBKString),
+     ?_assert(decode(GBKString, gbk, []) =:= Unicode)
+    ].

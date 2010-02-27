@@ -17,7 +17,7 @@
 %% %CopyrightEnd%
 %%
 -module(mb).
--export([modules/0, init/0, decode/2, decode/3, encode/2, encode/3]).
+-export([init/0, decode/2, decode/3, encode/2, encode/3]).
 -define(CODECS, mb_codecs).
 
 %%---------------------------------------------------------------------------
