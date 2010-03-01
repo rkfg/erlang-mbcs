@@ -17,8 +17,10 @@
 %% %CopyrightEnd%
 %%
 -module(mb).
--export([init/0, decode/2, decode/3, encode/2, encode/3]).
+-export([init/0, encode/2, encode/3, decode/2, decode/3]).
 -define(CODECS, mb_codecs).
+-define(ENCODE_OPTIONS_DEFAULT, [{output, binary}, {error, strict}, {error_replace_char, $?}, {bom, false}]).
+-define(DECODE_OPTIONS_DEFAULT, [{output, binary}, {error, strict}, {error_replace_char, 16#FFFD}]).
 
 %%---------------------------------------------------------------------------
 
@@ -36,15 +38,57 @@
 -spec init() -> ok.
 
 init() ->
-    mb_mbcs:init(),
-	mb_unicode:init(),
-	mb_gb18030:init(),
-	CodecsPropList= fun(Mod) ->
-						[{X, Mod} || X <- Mod:encodings()]
-					end,
-	CodecsDict = dict:from_list(CodecsPropList(mb_mbcs) ++ CodecsPropList(mb_unicode) ++ CodecsPropList(mb_gb18030)),
-	erlang:put(?CODECS, CodecsDict),
-	ok.
+    Modules = [
+                mb_mbcs, 
+                mb_unicode, 
+                mb_gb18030
+              ],
+    lists:foreach(fun(Mod) ->
+                ok = Mod:init()
+            end,
+            Modules),
+    CodecsDict = dict:from_list(
+                    lists:append([[{Enc, Mod} || Enc <- Mod:encodings()] || Mod <- Modules])
+                ),
+    erlang:put(?CODECS, CodecsDict),
+    ok.
+
+%%---------------------------------------------------------------------------
+
+%% @spec parse_options(Options, OptionsDefault) -> {ok, OptionDict} | {error, Reason}
+%%
+%% @doc Parse Options List to Option Dict, Return {ok, OptionDict} or {error, Reason}.
+
+-spec parse_options(Options::options(), OptionsDefault::list()) -> {ok, dict()} | {error, tuple()}.
+
+parse_options(Options, OptionsDefault) when is_list(Options), is_list(OptionsDefault) ->
+    parse_options1(Options, dict:from_list(OptionsDefault)).
+
+parse_options1([], OptionDict) ->
+    {ok, OptionDict};
+parse_options1([Option | OptionsTail], OptionDict) ->
+    case Option of
+        binary ->
+            parse_options1(OptionsTail, dict:store(output, binary, OptionDict));
+        list ->   
+            parse_options1(OptionsTail, dict:store(output, list, OptionDict));
+        ignore -> 
+            parse_options1(OptionsTail, dict:store(error, ignore, OptionDict));
+        strict -> 
+            parse_options1(OptionsTail, dict:store(error, strict, OptionDict));
+        replace -> 
+            parse_options1(OptionsTail, dict:store(error, replace, OptionDict));
+        {replace, Char} when is_integer(Char) -> 
+            parse_options1(OptionsTail, dict:store(error_replace_char, Char, dict:store(error, replace, OptionDict)));
+        bom -> 
+            parse_options1(OptionsTail, dict:store(bom, true, OptionDict));
+        {bom, true} -> 
+            parse_options1(OptionsTail, dict:store(bom, true, OptionDict));
+        {bom, false}->
+            parse_options1(OptionsTail, dict:store(bom, false, OptionDict));
+        UnknownOption ->
+            {error, {cannot_encode, [{reason, unknown_option}, {option, UnknownOption}]}}
+    end.
 
 %% ---------------------------------------------------------------------
 
@@ -68,40 +112,45 @@ encode(Unicode, Encoding) when is_list(Unicode), is_atom(Encoding) ->
 -spec encode(Unicode::unicode(), Encoding::encoding(), Options::options()) -> binary() | string().
 
 encode(Unicode, Encoding, Options) when is_list(Unicode), is_atom(Encoding), is_list(Options) ->
-	case erlang:get(?CODECS) of
-		undefined ->
-			{error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, ?CODECS}, {detail, "maybe you should call mb:init() first"}]}};
-		CodecsDict ->
-			case catch dict:fetch(Encoding, CodecsDict) of
-				{'EXIT',{badarg, _}} ->
-					{error, {cannot_encode, [{reson, illegal_encoding}, {encoding, Encoding}]}};
-				Mod ->
-					Mod:encode(Unicode, Encoding, Options)
-			end
-	end.
+    case erlang:get(?CODECS) of
+        undefined ->
+            {error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, ?CODECS}, {detail, "maybe you should call mb:init() first"}]}};
+        CodecsDict ->
+            case catch dict:fetch(Encoding, CodecsDict) of
+                {'EXIT',{badarg, _}} ->
+                    {error, {cannot_encode, [{reson, illegal_encoding}, {encoding, Encoding}]}};
+                Mod ->
+                    case parse_options(Options, ?ENCODE_OPTIONS_DEFAULT) of
+                        {ok, OptionDict} ->
+                            Mod:encode(Unicode, Encoding, OptionDict);
+                        {error, Reason} ->
+                            {error, Reason}
+                    end 
+            end
+    end.
 
 %% ---------------------------------------------------------------------
 
-%% @spec decode(String::string()|binary(), Encoding::encoding()) -> unicode()
+%% @spec decode(StringOrBinary::string()|binary(), Encoding::encoding()) -> unicode()
 %%
-%% @doc Equivalent to decode(String, Encoding, []).
+%% @doc Equivalent to decode(StringOrBinary, Encoding, []).
 %%
 %% @see decode/3
 
--spec decode(String::string()|binary(), Encoding::encoding()) -> unicode().
+-spec decode(StringOrBinary::string()|binary(), Encoding::encoding()) -> unicode().
 
 decode(String, Encoding) when is_list(String), is_atom(Encoding) ->
     decode(String, Encoding, []);
 decode(Binary, Encoding) when is_binary(Binary), is_atom(Encoding) ->
     decode(Binary, Encoding, []).
 
-%% @spec decode(String::string()|binary(), Encoding::encoding(), Options::options()) -> unicode()
+%% @spec decode(StringOrBinary::string()|binary(), Encoding::encoding(), Options::options()) -> unicode()
 %%
 %% @doc Return a Unicode.
 %%
 %% @see decode/2
 
--spec decode(String::string()|binary(), Encoding::encoding(), Options::options()) -> unicode().
+-spec decode(StringOrBinary::string()|binary(), Encoding::encoding(), Options::options()) -> unicode().
 
 decode(String, Encoding, Options) when is_list(String), is_atom(Encoding), is_list(Options) ->
     case catch list_to_binary(String) of
@@ -111,14 +160,19 @@ decode(String, Encoding, Options) when is_list(String), is_atom(Encoding), is_li
             decode(Binary, Encoding, Options)
     end;
 decode(Binary, Encoding, Options) when is_binary(Binary), is_atom(Encoding), is_list(Options) ->
-	case erlang:get(?CODECS) of
-		undefined ->
-			{error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, ?CODECS}, {detail, "maybe you should call mb:init() first"}]}};
-		CodecsDict ->
-			case catch dict:fetch(Encoding, CodecsDict) of
-				{'EXIT',{badarg, _}} ->
-					{error, {cannot_encode, [{reson, illegal_encoding}, {encoding, Encoding}]}};
-				Mod ->
-					Mod:decode(Binary, Encoding, Options)
-			end
-	end.
+    case erlang:get(?CODECS) of
+        undefined ->
+            {error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, ?CODECS}, {detail, "maybe you should call mb:init() first"}]}};
+        CodecsDict ->
+            case catch dict:fetch(Encoding, CodecsDict) of
+                {'EXIT',{badarg, _}} ->
+                    {error, {cannot_encode, [{reson, illegal_encoding}, {encoding, Encoding}]}};
+                Mod ->
+                    case parse_options(Options, ?DECODE_OPTIONS_DEFAULT) of
+                        {ok, OptionDict} ->
+                            Mod:decode(Binary, Encoding, OptionDict);
+                        {error, Reason} ->
+                            {error, Reason}
+                    end
+            end
+    end.

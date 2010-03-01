@@ -1,4 +1,3 @@
-%% User-defined behaviour module
 -module(mb_mbcs).
 -export([encodings/0, init/0, decode/3, encode/3]).
 
@@ -6,7 +5,7 @@
       encode_dict        :: dict(),            % encode mapping dict
       output             :: atom(),            % output format, binary or list
       error              :: atom(),            % error option
-	  error_replace_char :: char()             % error replace char
+      error_replace_char :: char()             % error replace char
      }).
 -define(ENCODE_ERROR_REPLACE_CHAR, $?).        % default replace char
 
@@ -15,78 +14,78 @@
       leadbytes_set      :: set(),             % lead bytes set
       decode_dict        :: dict(),            % decode mapping dict
       error              :: atom(),            % error option
-	  error_replace_char :: non_neg_integer()  % error replace char
+      error_replace_char :: non_neg_integer()  % error replace char
      }).
 -define(DECODE_ERROR_REPLACE_CHAR, 16#FFFD).   % default replace char
 
 encodings() ->
-	[
-	cp874,
-	cp932,
-	cp936,
-	gbk,
-	cp949,
-	cp950,
-	big5,
-	cp1250,
-	cp1251,
-	cp1252,
-	cp1253,
-	cp1254,
-	cp1255,
-	cp1256,
-	cp1257,
-	cp1258
-	].
-	
+    [
+    cp874,
+    cp932,
+    cp936,
+    gbk,
+    cp949,
+    cp950,
+    big5,
+    cp1250,
+    cp1251,
+    cp1252,
+    cp1253,
+    cp1254,
+    cp1255,
+    cp1256,
+    cp1257,
+    cp1258
+    ].
+    
 codecs_info(cp874) ->
-	{mb_codecs_cp874, "CP874.CONF", "CP874.BIN"};
+    {mb_codecs_cp874, "CP874.CONF", "CP874.BIN"};
 codecs_info(cp932) ->
-	{mb_codecs_cp932, "CP932.CONF", "CP932.BIN"};
+    {mb_codecs_cp932, "CP932.CONF", "CP932.BIN"};
 codecs_info(cp936) ->
-	{mb_codecs_cp936, "CP936.CONF", "CP936.BIN"};
+    {mb_codecs_cp936, "CP936.CONF", "CP936.BIN"};
 codecs_info(gbk) ->
-	{mb_codecs_cp936, "CP936.CONF", "CP936.BIN"};
+    {mb_codecs_cp936, "CP936.CONF", "CP936.BIN"};
 codecs_info(cp949) ->
-	{mb_codecs_cp949, "CP949.CONF", "CP949.BIN"};
+    {mb_codecs_cp949, "CP949.CONF", "CP949.BIN"};
 codecs_info(cp950) ->
-	{mb_codecs_cp950, "CP950.CONF", "CP950.BIN"};
+    {mb_codecs_cp950, "CP950.CONF", "CP950.BIN"};
 codecs_info(big5) ->
-	{mb_codecs_cp950, "CP950.CONF", "CP950.BIN"};
+    {mb_codecs_cp950, "CP950.CONF", "CP950.BIN"};
 codecs_info(cp1250) ->
-	{mb_codecs_cp1250, "CP1250.CONF", "CP1250.BIN"};
+    {mb_codecs_cp1250, "CP1250.CONF", "CP1250.BIN"};
 codecs_info(cp1251) ->
-	{mb_codecs_cp1251, "CP1251.CONF", "CP1251.BIN"};
+    {mb_codecs_cp1251, "CP1251.CONF", "CP1251.BIN"};
 codecs_info(cp1252) ->
-	{mb_codecs_cp1252, "CP1252.CONF", "CP1252.BIN"};
+    {mb_codecs_cp1252, "CP1252.CONF", "CP1252.BIN"};
 codecs_info(cp1253) ->
-	{mb_codecs_cp1253, "CP1253.CONF", "CP1253.BIN"};
+    {mb_codecs_cp1253, "CP1253.CONF", "CP1253.BIN"};
 codecs_info(cp1254) ->
-	{mb_codecs_cp1254, "CP1254.CONF", "CP1254.BIN"};
+    {mb_codecs_cp1254, "CP1254.CONF", "CP1254.BIN"};
 codecs_info(cp1255) ->
-	{mb_codecs_cp1255, "CP1255.CONF", "CP1255.BIN"};
+    {mb_codecs_cp1255, "CP1255.CONF", "CP1255.BIN"};
 codecs_info(cp1256) ->
-	{mb_codecs_cp1256, "CP1256.CONF", "CP1256.BIN"};
+    {mb_codecs_cp1256, "CP1256.CONF", "CP1256.BIN"};
 codecs_info(cp1257) ->
-	{mb_codecs_cp1257, "CP1257.CONF", "CP1257.BIN"};
+    {mb_codecs_cp1257, "CP1257.CONF", "CP1257.BIN"};
 codecs_info(cp1258) ->
-	{mb_codecs_cp1258, "CP1258.CONF", "CP1258.BIN"}.
+    {mb_codecs_cp1258, "CP1258.CONF", "CP1258.BIN"}.
 
 init(Encoding) ->
-	{Processdict, Confname, Binname} = codecs_info(Encoding), 
+    {Processdict, Confname, Binname} = codecs_info(Encoding), 
     Path = code:priv_dir(mb),
     Confpath = filename:join(Path, Confname),
     Binpath  = filename:join(Path, Binname),
     case filelib:is_file(Binpath) of
         true ->
-			case erlang:get(Processdict) =/= undefined of
-				true ->
-					ok;
-				false ->
-					{ok, Binary} = file:read_file(Binpath),
-					undefined = erlang:put(Processdict, binary_to_term(Binary)),
-					ok
-			end;
+            case erlang:get(Processdict) =/= undefined of
+                true ->
+                    ok;
+                false ->
+                    {ok, Binary} = file:read_file(Binpath),
+                    undefined = erlang:put(Processdict, binary_to_term(Binary)),
+                    ok
+            end;
         false ->
             {ok, [PropList]} = file:consult(Confpath),
             DecodeUndefinedSet = sets:from_list(proplists:get_value(undefined,PropList)),
@@ -97,54 +96,25 @@ init(Encoding) ->
             ok = file:write_file(Binpath, term_to_binary({{DecodeUndefinedSet, DecodeLeadByteSet, DecodeDict}, {EncodeDict}})),
             init(Encoding)
     end.
-	
+    
 init() ->
-	lists:foreach(fun(Encoding) ->
-					ok = init(Encoding)
-				end,
-				encodings()).
+    lists:foreach(fun(Encoding) ->
+                    ok = init(Encoding)
+                end,
+                encodings()).
 
-process_encode_options(Options) when is_list(Options) ->
-	OptionDefeault = [{output, binary}, {error, strict}, {error_replace_char, ?ENCODE_ERROR_REPLACE_CHAR}],
-	process_encode_options1(Options, dict:from_list(OptionDefeault)).
-	
-process_encode_options1([], OptionDict) ->
-	{ok, OptionDict};
-process_encode_options1([Option | OptionsTail], OptionDict) ->
-	case Option of
-		binary ->
-			process_encode_options1(OptionsTail, dict:store(output, binary, OptionDict));
-		list ->   
-			process_encode_options1(OptionsTail, dict:store(output, list, OptionDict));
-		ignore -> 
-			process_encode_options1(OptionsTail, dict:store(error, ignore, OptionDict));
-		strict -> 
-			process_encode_options1(OptionsTail, dict:store(error, strict, OptionDict));
-		replace -> 
-			process_encode_options1(OptionsTail, dict:store(error, replace, OptionDict));
-		{replace, Char} when is_integer(Char) -> 
-			process_encode_options1(OptionsTail, dict:store(error_replace_char, Char, dict:store(error, replace, OptionDict)));
-		UnknownOption ->
-			{error, {cannot_encode, [{reason, unknown_option}, {option, UnknownOption}]}}
-	end.
-
-encode(Unicode, Encoding, Options) when is_list(Unicode), is_atom(Encoding), is_list(Options) ->
-	{PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = codecs_info(Encoding), 
-	case process_encode_options(Options) of
-		{ok, OptionDict} ->
-			case erlang:get(PROCESS_DICT_ATOM) of
-				{_, {EncodeDict}} ->
-					EncodeProfile = #encode_profile{encode_dict        = EncodeDict,
-													output             = dict:fetch(output, OptionDict),
-													error              = dict:fetch(error, OptionDict),
-													error_replace_char = dict:fetch(error_replace_char, OptionDict)},
-					encode1(Unicode, EncodeProfile, 1, []);
-				_OtherDict ->
-					{error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, PROCESS_DICT_ATOM}, {detail, "maybe you should call mb:init() first"}]}}
-			end;
-		{error, Reason} ->
-			{error, Reason}
-	end.    
+encode(Unicode, Encoding, OptionDict) when is_list(Unicode), is_atom(Encoding), is_tuple(OptionDict) ->
+    {PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = codecs_info(Encoding),
+    case erlang:get(PROCESS_DICT_ATOM) of
+        {_, {EncodeDict}} ->
+            EncodeProfile = #encode_profile{encode_dict        = EncodeDict,
+                                            output             = dict:fetch(output, OptionDict),
+                                            error              = dict:fetch(error, OptionDict),
+                                            error_replace_char = dict:fetch(error_replace_char, OptionDict)},
+            encode1(Unicode, EncodeProfile, 1, []);
+        _OtherDict ->
+            {error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, PROCESS_DICT_ATOM}, {detail, "maybe you should call mb:init() first"}]}}
+    end.
 
 encode1([], EncodeProfile, _, String) when is_record(EncodeProfile, encode_profile), is_list(String) ->
     OutputString = lists:reverse(String),
@@ -171,45 +141,20 @@ encode1([Code | RestCodes], #encode_profile{encode_dict=EncodeDict,error=Error, 
                     encode1(RestCodes, EncodeProfile, Pos+1, [MultibyteChar band 16#FF, MultibyteChar bsr 8 | String])
             end
     end.
-	
-process_decode_options(Options) when is_list(Options) ->
-	OptionDefeault = [{error, strict}, {error_replace_char, ?DECODE_ERROR_REPLACE_CHAR}],
-	process_decode_options1(Options, dict:from_list(OptionDefeault)).
 
-process_decode_options1([], OptionDict) ->
-	{ok, OptionDict};
-process_decode_options1([Option | OptionsTail], OptionDict) ->
-	case Option of
-		strict ->
-			process_decode_options1(OptionsTail, dict:store(error, strict, OptionDict));
-		ignore -> 
-			process_decode_options1(OptionsTail, dict:store(error, ignore, OptionDict));
-		replace -> 
-			process_decode_options1(OptionsTail, dict:store(error, replace, OptionDict));
-		{replace, Char} when is_integer(Char) -> 
-			process_decode_options1(OptionsTail, dict:store(error_replace_char, Char, dict:store(error, replace, OptionDict)));
-		UnknownOption ->
-			{error, {cannot_decode, [{reason, unknown_option}, {option, UnknownOption}]}}	
-	end.
-
-decode(Binary, Encoding, Options) when is_binary(Binary), is_atom(Encoding), is_list(Options) ->
-	{PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = codecs_info(Encoding), 
-	case process_decode_options(Options) of
-		{ok, OptionDict} ->
-			case erlang:get(PROCESS_DICT_ATOM) of
-				{{DecodeUndefinedSet, DecodeLeadByteSet, DecodeDict}, _} ->
-					DecodeProfile = #decode_profile{undefined_set      = DecodeUndefinedSet, 
-													leadbytes_set      = DecodeLeadByteSet, 
-													decode_dict        = DecodeDict, 
-													error              = dict:fetch(error, OptionDict),
-													error_replace_char = dict:fetch(error_replace_char, OptionDict)},
-					decode1(Binary, DecodeProfile, 1, []);
-				_OtherDict ->
-					{error, {cannot_decode, [{reson, illegal_process_dict}, {process_dict, PROCESS_DICT_ATOM}, {detail, "maybe you should call mb:init() first"}]}}
-			end;
-		{error, Reason} ->
-			{error, Reason}
-	end.
+decode(Binary, Encoding, OptionDict) when is_binary(Binary), is_atom(Encoding), is_tuple(OptionDict) ->
+    {PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = codecs_info(Encoding), 
+    case erlang:get(PROCESS_DICT_ATOM) of
+        {{DecodeUndefinedSet, DecodeLeadByteSet, DecodeDict}, _} ->
+            DecodeProfile = #decode_profile{undefined_set      = DecodeUndefinedSet, 
+                                            leadbytes_set      = DecodeLeadByteSet, 
+                                            decode_dict        = DecodeDict, 
+                                            error              = dict:fetch(error, OptionDict),
+                                            error_replace_char = dict:fetch(error_replace_char, OptionDict)},
+            decode1(Binary, DecodeProfile, 1, []);
+        _OtherDict ->
+            {error, {cannot_decode, [{reson, illegal_process_dict}, {process_dict, PROCESS_DICT_ATOM}, {detail, "maybe you should call mb:init() first"}]}}
+    end.
 
 decode1(<<>>, _, _, Unicode) when is_list(Unicode) ->
     lists:reverse(Unicode);
