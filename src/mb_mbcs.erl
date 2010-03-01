@@ -123,8 +123,15 @@ encode1([], EncodeProfile, _, String) when is_record(EncodeProfile, encode_profi
         binary -> erlang:list_to_binary(OutputString)
     end;
 encode1([Code | RestCodes], #encode_profile{encode_dict=EncodeDict,error=Error, error_replace_char=ErrorReplaceChar}=EncodeProfile, Pos, String) when is_integer(Pos), is_list(String) ->
-    case catch dict:fetch(Code, EncodeDict) of
-        {'EXIT',{badarg, _}} ->
+    case dict:find(Code, EncodeDict) of
+        {ok, MultibyteChar} ->
+            case MultibyteChar > 16#FF of
+                false ->
+                    encode1(RestCodes, EncodeProfile, Pos+1, [MultibyteChar | String]);
+                true ->
+                    encode1(RestCodes, EncodeProfile, Pos+1, [MultibyteChar band 16#FF, MultibyteChar bsr 8 | String])
+            end;
+        error ->
             case Error of
                 ignore ->
                     encode1(RestCodes, EncodeProfile, Pos+1, String);
@@ -132,13 +139,6 @@ encode1([Code | RestCodes], #encode_profile{encode_dict=EncodeDict,error=Error, 
                     encode1(RestCodes, EncodeProfile, Pos+1, [ErrorReplaceChar | String]);
                 strict ->
                     {error, {cannot_encode, [{reason, unmapping_unicode}, {unicode, Code}, {pos, Pos}]}}
-            end;
-        MultibyteChar ->
-            case MultibyteChar > 16#FF of
-                false ->
-                    encode1(RestCodes, EncodeProfile, Pos+1, [MultibyteChar | String]);
-                true ->
-                    encode1(RestCodes, EncodeProfile, Pos+1, [MultibyteChar band 16#FF, MultibyteChar bsr 8 | String])
             end
     end.
 
@@ -172,8 +172,10 @@ decode1(<<LeadByte:8, Rest/binary>>, #decode_profile{undefined_set=UndefinedSet,
         false ->
             case sets:is_element(LeadByte, LeadbytesSet) of
                 false ->
-                    case catch dict:fetch(LeadByte, DecodeDict) of
-                        {'EXIT',{badarg, _}} ->
+                    case dict:find(LeadByte, DecodeDict) of
+                        {ok, Code} ->
+                            decode1(Rest, DecodeProfile, Pos+1, [Code | Unicode]);
+                        error ->
                             case Error of
                                 ignore ->
                                     decode1(Rest, DecodeProfile, Pos+1, Unicode);
@@ -181,17 +183,17 @@ decode1(<<LeadByte:8, Rest/binary>>, #decode_profile{undefined_set=UndefinedSet,
                                     decode1(Rest, DecodeProfile, Pos+1, [ErrorReplaceChar | Unicode]);
                                 strict ->
                                     {error, {cannot_decode, [{reason, unmapping_character}, {character, LeadByte}, {pos, Pos}]}}
-                            end;
-                        Code ->
-                            decode1(Rest, DecodeProfile, Pos+1, [Code | Unicode])
+                            end
                     end;
                 true ->
                     case erlang:bit_size(Rest) =:= 0 of
                         false ->
                             <<FollowByte:8, Rest1/binary>> = Rest,
                             MultibyteChar = LeadByte bsl 8 bor FollowByte,
-                            case catch dict:fetch(MultibyteChar, DecodeDict) of
-                                {'EXIT',{badarg, _}} ->
+                            case dict:find(MultibyteChar, DecodeDict) of
+                                {ok, Code} ->
+                                    decode1(Rest1, DecodeProfile, Pos+2, [Code | Unicode]);
+                                error ->
                                     case Error of
                                         ignore ->
                                             decode1(Rest1, DecodeProfile, Pos+2, Unicode);
@@ -199,9 +201,7 @@ decode1(<<LeadByte:8, Rest/binary>>, #decode_profile{undefined_set=UndefinedSet,
                                             decode1(Rest1, DecodeProfile, Pos+2, [ErrorReplaceChar | Unicode]);
                                         strict ->
                                             {error, {cannot_decode, [{reason, unmapping_multibyte_character}, {multibyte_character, MultibyteChar}, {pos, Pos}]}}
-                                    end;
-                                Code ->
-                                    decode1(Rest1, DecodeProfile, Pos+2, [Code | Unicode])
+                                    end
                             end;
                         true ->
                             case Error of

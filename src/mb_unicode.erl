@@ -34,25 +34,25 @@ encode(Unicode, Encoding, OptionDict) when is_list(Unicode), is_atom(Encoding), 
     {NewEncoding} = codecs_info(Encoding),
     NewUnicode  =   case Unicode of
                         [16#FEFF, RestCodes] ->
-                            case dict:fetch(bom, OptionDict) of
-                                true ->
+                            case dict:find(bom, OptionDict) of
+                                {ok, true} ->
                                     Unicode;
-                                false ->
+                                {ok, false} ->
                                     RestCodes
                             end;
                         Unicode ->
-                            case dict:fetch(bom, OptionDict) of
-                                true ->
+                            case dict:find(bom, OptionDict) of
+                                {ok, true} ->
                                     [16#FEFF, Unicode];
-                                false ->
+                                {ok, false} ->
                                     Unicode
                             end
                     end,
     Binary = unicode:characters_to_binary(NewUnicode, unicode, NewEncoding),
-    case dict:fetch(output, OptionDict) of
-        list ->
+    case dict:find(output, OptionDict) of
+        {ok, list} ->
             erlang:binary_to_list(Binary);
-        binary ->
+        {ok, binary} ->
             Binary
     end.
 

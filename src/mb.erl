@@ -47,9 +47,18 @@ init() ->
                 ok = Mod:init()
             end,
             Modules),
-    CodecsDict = dict:from_list(
-                    lists:append([[{Enc, Mod} || Enc <- Mod:encodings()] || Mod <- Modules])
-                ),
+    %CodecsDict = dict:from_list(
+    %                lists:append([[{Enc, Mod} || Enc <- Mod:encodings()] || Mod <- Modules])
+    %            ),
+    CodecsDict = lists:foldl(fun(Mod, Dict) ->
+                                lists:foldl(fun(Enc, DictAcc) ->
+                                                dict:store(Enc, Mod, DictAcc)
+                                            end,
+                                            Dict,
+                                            Mod:encodings())
+                            end,
+                            dict:new(),
+                            Modules),
     erlang:put(?CODECS, CodecsDict),
     ok.
 
@@ -116,16 +125,16 @@ encode(Unicode, Encoding, Options) when is_list(Unicode), is_atom(Encoding), is_
         undefined ->
             {error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, ?CODECS}, {detail, "maybe you should call mb:init() first"}]}};
         CodecsDict ->
-            case catch dict:fetch(Encoding, CodecsDict) of
-                {'EXIT',{badarg, _}} ->
-                    {error, {cannot_encode, [{reson, illegal_encoding}, {encoding, Encoding}]}};
-                Mod ->
+            case dict:find(Encoding, CodecsDict) of
+                {ok, Mod} ->
                     case parse_options(Options, ?ENCODE_OPTIONS_DEFAULT) of
                         {ok, OptionDict} ->
                             Mod:encode(Unicode, Encoding, OptionDict);
                         {error, Reason} ->
                             {error, Reason}
-                    end 
+                    end;
+                error ->
+                    {error, {cannot_encode, [{reson, illegal_encoding}, {encoding, Encoding}]}}
             end
     end.
 
@@ -164,15 +173,15 @@ decode(Binary, Encoding, Options) when is_binary(Binary), is_atom(Encoding), is_
         undefined ->
             {error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, ?CODECS}, {detail, "maybe you should call mb:init() first"}]}};
         CodecsDict ->
-            case catch dict:fetch(Encoding, CodecsDict) of
-                {'EXIT',{badarg, _}} ->
-                    {error, {cannot_encode, [{reson, illegal_encoding}, {encoding, Encoding}]}};
-                Mod ->
+            case dict:find(Encoding, CodecsDict) of
+                {ok, Mod} ->
                     case parse_options(Options, ?DECODE_OPTIONS_DEFAULT) of
                         {ok, OptionDict} ->
                             Mod:decode(Binary, Encoding, OptionDict);
                         {error, Reason} ->
                             {error, Reason}
-                    end
+                    end;
+                error ->
+                    {error, {cannot_encode, [{reson, illegal_encoding}, {encoding, Encoding}]}}
             end
     end.
