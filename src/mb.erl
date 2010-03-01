@@ -29,64 +29,20 @@
 
 %%---------------------------------------------------------------------------
 
-%% @spec modules() -> [module].
-%%
-%% @doc Return [module].
-%%
-
--spec modules() -> [atom()].
-
-modules() ->
-	[
-	mb_cp874,
-	mb_cp936,   
-	mb_cp932,
-	mb_cp949,
-	mb_cp950,
-	mb_cp1250,
-	mb_cp1251,
-	mb_cp1252,
-	mb_cp1253,
-	mb_cp1254,
-	mb_cp1255,
-	mb_cp1256,
-	mb_cp1257,
-	mb_cp1258,
-	mb_gb18030,
-	mb_utf8,    
-	mb_utf16,   
-	mb_utf16le, 
-	mb_utf16be, 
-	mb_utf32,
-	mb_utf32le, 
-	mb_utf32be
-	].
-	
-%%---------------------------------------------------------------------------
-
 %% @spec init() -> ok
 %%
 %% @doc Load all codecs to process dict memory, Return ok.
-%%
-%% @see init/1
 
 -spec init() -> ok.
 
 init() ->
-    lists:foreach(fun(Mod) ->
-						ok = Mod:init()
+    mb_mbcs:init(),
+	mb_unicode:init(),
+	mb_gb18030:init(),
+	CodecsPropList= fun(Mod) ->
+						[{X, Mod} || X <- Mod:encodings()]
 					end,
-					modules()),
-	CodecsDict = lists:foldl(fun(Mod, Dict) ->
-								Encodings = Mod:encodings(),
-								lists:foldl(fun(Encoding, D) ->
-												dict:store(Encoding, Mod, D)
-											end,
-											Dict,
-											Encodings)
-							end,
-							dict:new(),
-							modules()),
+	CodecsDict = dict:from_list(CodecsPropList(mb_mbcs) ++ CodecsPropList(mb_unicode) ++ CodecsPropList(mb_gb18030)),
 	erlang:put(?CODECS, CodecsDict),
 	ok.
 
@@ -120,7 +76,7 @@ encode(Unicode, Encoding, Options) when is_list(Unicode), is_atom(Encoding), is_
 				{'EXIT',{badarg, _}} ->
 					{error, {cannot_encode, [{reson, illegal_encoding}, {encoding, Encoding}]}};
 				Mod ->
-					Mod:encode(Unicode, Options)
+					Mod:encode(Unicode, Encoding, Options)
 			end
 	end.
 
@@ -163,6 +119,6 @@ decode(Binary, Encoding, Options) when is_binary(Binary), is_atom(Encoding), is_
 				{'EXIT',{badarg, _}} ->
 					{error, {cannot_encode, [{reson, illegal_encoding}, {encoding, Encoding}]}};
 				Mod ->
-					Mod:decode(Binary, Options)
+					Mod:decode(Binary, Encoding, Options)
 			end
 	end.
