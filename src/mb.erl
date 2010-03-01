@@ -40,16 +40,13 @@
 init() ->
     Modules = [
                 mb_mbcs, 
-                mb_unicode, 
+                mb_unicode,
                 mb_gb18030
               ],
     lists:foreach(fun(Mod) ->
                 ok = Mod:init()
             end,
             Modules),
-    %CodecsDict = dict:from_list(
-    %                lists:append([[{Enc, Mod} || Enc <- Mod:encodings()] || Mod <- Modules])
-    %            ),
     CodecsDict = lists:foldl(fun(Mod, Dict) ->
                                 lists:foldl(fun(Enc, DictAcc) ->
                                                 dict:store(Enc, Mod, DictAcc)

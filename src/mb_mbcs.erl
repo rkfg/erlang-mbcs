@@ -78,12 +78,12 @@ init(Encoding) ->
     Binpath  = filename:join(Path, Binname),
     case filelib:is_file(Binpath) of
         true ->
-            case erlang:get(Processdict) =/= undefined of
-                true ->
-                    ok;
-                false ->
+            case erlang:get(Processdict) of
+                undefined ->
                     {ok, Binary} = file:read_file(Binpath),
                     undefined = erlang:put(Processdict, binary_to_term(Binary)),
+                    ok;
+                Any when is_tuple(Any) ->
                     ok
             end;
         false ->
@@ -186,8 +186,17 @@ decode1(<<LeadByte:8, Rest/binary>>, #decode_profile{undefined_set=UndefinedSet,
                             end
                     end;
                 true ->
-                    case erlang:bit_size(Rest) =:= 0 of
-                        false ->
+                    case erlang:bit_size(Rest) of
+                        0 ->
+                            case Error of
+                                ignore ->
+                                    decode1(Rest, DecodeProfile, Pos+1, Unicode);
+                                replace ->
+                                    decode1(Rest, DecodeProfile, Pos+1, [ErrorReplaceChar | Unicode]);
+                                strict ->
+                                    {error, {cannot_decode, [{reason, incomplete_multibyte_sequence}, {leadbyte, LeadByte}, {pos, Pos}]}}
+                            end;
+                        _Any ->
                             <<FollowByte:8, Rest1/binary>> = Rest,
                             MultibyteChar = LeadByte bsl 8 bor FollowByte,
                             case dict:find(MultibyteChar, DecodeDict) of
@@ -202,15 +211,6 @@ decode1(<<LeadByte:8, Rest/binary>>, #decode_profile{undefined_set=UndefinedSet,
                                         strict ->
                                             {error, {cannot_decode, [{reason, unmapping_multibyte_character}, {multibyte_character, MultibyteChar}, {pos, Pos}]}}
                                     end
-                            end;
-                        true ->
-                            case Error of
-                                ignore ->
-                                    decode1(Rest, DecodeProfile, Pos+1, Unicode);
-                                replace ->
-                                    decode1(Rest, DecodeProfile, Pos+1, [ErrorReplaceChar | Unicode]);
-                                strict ->
-                                    {error, {cannot_decode, [{reason, incomplete_multibyte_sequence}, {leadbyte, LeadByte}, {pos, Pos}]}}
                             end
                     end
             end
