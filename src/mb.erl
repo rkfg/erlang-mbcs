@@ -168,7 +168,7 @@ decode(String, Encoding, Options) when is_list(String), is_atom(Encoding), is_li
 decode(Binary, Encoding, Options) when is_binary(Binary), is_atom(Encoding), is_list(Options) ->
     case erlang:get(?CODECS) of
         undefined ->
-            {error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, ?CODECS}, {detail, "maybe you should call mb:init() first"}]}};
+            {error, {cannot_decode, [{reson, illegal_process_dict}, {process_dict, ?CODECS}, {detail, "maybe you should call mb:init() first"}]}};
         CodecsDict ->
             case dict:find(Encoding, CodecsDict) of
                 {ok, Mod} ->
@@ -179,6 +179,6 @@ decode(Binary, Encoding, Options) when is_binary(Binary), is_atom(Encoding), is_
                             {error, Reason}
                     end;
                 error ->
-                    {error, {cannot_encode, [{reson, illegal_encoding}, {encoding, Encoding}]}}
+                    {error, {cannot_decode, [{reson, illegal_encoding}, {encoding, Encoding}]}}
             end
     end.
