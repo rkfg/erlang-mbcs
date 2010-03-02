@@ -170,7 +170,7 @@ decode1(<<LeadByte:8, Rest/binary>>, #decode_profile{undefined_set=UndefinedSet,
                     {error, {cannot_decode, [{reason, undefined_character}, {character, LeadByte}, {pos, Pos}]}}
             end;
         false ->
-            case sets:is_element(LeadByte, LeadbytesSet) of
+            case sets:size(LeadbytesSet) =/= 0 andalso sets:is_element(LeadByte, LeadbytesSet) of
                 false ->
                     case dict:find(LeadByte, DecodeDict) of
                         {ok, Code} ->
