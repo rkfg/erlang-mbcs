@@ -49,7 +49,7 @@ encode(Unicode, Encoding, OptionDict) when is_list(Unicode), is_atom(Encoding), 
                             end
                     end,
     Binary = unicode:characters_to_binary(NewUnicode, unicode, NewEncoding),
-    case dict:find(output, OptionDict) of
+    case dict:find(return, OptionDict) of
         {ok, list} ->
             erlang:binary_to_list(Binary);
         {ok, binary} ->

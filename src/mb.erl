@@ -19,14 +19,14 @@
 -module(mb).
 -export([init/0, encode/2, encode/3, decode/2, decode/3]).
 -define(CODECS, mb_codecs).
--define(ENCODE_OPTIONS_DEFAULT, [{output, binary}, {error, strict}, {error_replace_char, $?}, {bom, false}]).
--define(DECODE_OPTIONS_DEFAULT, [{output, binary}, {error, strict}, {error_replace_char, 16#FFFD}]).
+-define(ENCODE_OPTIONS_DEFAULT, [{return, binary}, {error, strict}, {error_replace_char, $?}, {bom, false}]).
+-define(DECODE_OPTIONS_DEFAULT, [{return, binary}, {error, strict}, {error_replace_char, 16#FFFD}]).
 
 %%---------------------------------------------------------------------------
 
 -type unicode()  :: [non_neg_integer()].
 -type encoding() :: 'cp874' | 'iso_8859_11' | 'cp1250' | 'cp1251' | 'cp1252' | 'cp1253' | 'cp1254' | 'cp1255' | 'cp1256' | 'cp1257' | 'cp1258' | 'cp932' | 'cp936' | 'gbk' | 'cp949' | 'cp950' | 'big5' | 'utf8' | 'utf16' | 'utf16le' | 'utf16be' | 'utf32' | 'utf32le' | 'utf32be'.
--type option()   :: 'list' | 'binary' | 'ignore' | 'strict' | 'replace' | {replace, non_neg_integer()} | 'bom' | {bom, true} | {bom, false}.
+-type option()   :: {return, list} | {return, binary} | {error, strict} | {error, ignore} | {error, replace} | {error_replace_char, non_neg_integer()} | {bom, true} | {bom, false}.
 -type options()  :: [option()].
 
 %%---------------------------------------------------------------------------
@@ -74,20 +74,18 @@ parse_options1([], OptionDict) ->
     {ok, OptionDict};
 parse_options1([Option | OptionsTail], OptionDict) ->
     case Option of
-        binary ->
-            parse_options1(OptionsTail, dict:store(output, binary, OptionDict));
-        list ->   
-            parse_options1(OptionsTail, dict:store(output, list, OptionDict));
-        ignore -> 
+        {return, binary} ->
+            parse_options1(OptionsTail, dict:store(return, binary, OptionDict));
+        {return, list} ->   
+            parse_options1(OptionsTail, dict:store(return, list, OptionDict));
+        {error, ignore} -> 
             parse_options1(OptionsTail, dict:store(error, ignore, OptionDict));
-        strict -> 
+        {error, strict} -> 
             parse_options1(OptionsTail, dict:store(error, strict, OptionDict));
-        replace -> 
+        {error, replace} -> 
             parse_options1(OptionsTail, dict:store(error, replace, OptionDict));
         {replace, Char} when is_integer(Char) -> 
             parse_options1(OptionsTail, dict:store(error_replace_char, Char, dict:store(error, replace, OptionDict)));
-        bom -> 
-            parse_options1(OptionsTail, dict:store(bom, true, OptionDict));
         {bom, true} -> 
             parse_options1(OptionsTail, dict:store(bom, true, OptionDict));
         {bom, false}->

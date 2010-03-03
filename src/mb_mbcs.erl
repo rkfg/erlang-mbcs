@@ -3,7 +3,7 @@
 
 -record(encode_profile, {
       encode_dict        :: dict(),            % encode mapping dict
-      output             :: atom(),            % output format, binary or list
+      return             :: atom(),            % return format, binary or list
       error              :: atom(),            % error option
       error_replace_char :: char()             % error replace char
      }).
@@ -108,7 +108,7 @@ encode(Unicode, Encoding, OptionDict) when is_list(Unicode), is_atom(Encoding), 
     case erlang:get(PROCESS_DICT_ATOM) of
         {_, {EncodeDict}} ->
             EncodeProfile = #encode_profile{encode_dict        = EncodeDict,
-                                            output             = dict:fetch(output, OptionDict),
+                                            return             = dict:fetch(return, OptionDict),
                                             error              = dict:fetch(error, OptionDict),
                                             error_replace_char = dict:fetch(error_replace_char, OptionDict)},
             encode1(Unicode, EncodeProfile, 1, []);
@@ -117,10 +117,10 @@ encode(Unicode, Encoding, OptionDict) when is_list(Unicode), is_atom(Encoding), 
     end.
 
 encode1([], EncodeProfile, _, String) when is_record(EncodeProfile, encode_profile), is_list(String) ->
-    OutputString = lists:reverse(String),
-    case EncodeProfile#encode_profile.output of
-        list   -> OutputString;
-        binary -> erlang:list_to_binary(OutputString)
+    ReturnString = lists:reverse(String),
+    case EncodeProfile#encode_profile.return of
+        list   -> ReturnString;
+        binary -> erlang:list_to_binary(ReturnString)
     end;
 encode1([Code | RestCodes], #encode_profile{encode_dict=EncodeDict,error=Error, error_replace_char=ErrorReplaceChar}=EncodeProfile, Pos, String) when is_integer(Pos), is_list(String) ->
     case dict:find(Code, EncodeDict) of
