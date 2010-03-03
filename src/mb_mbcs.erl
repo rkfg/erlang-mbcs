@@ -116,13 +116,13 @@ encode(Unicode, Encoding, OptionDict) when is_list(Unicode), is_atom(Encoding), 
             {error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, PROCESS_DICT_ATOM}, {detail, "maybe you should call mb:init() first"}]}}
     end.
 
-encode1([], EncodeProfile, _, String) when is_record(EncodeProfile, encode_profile), is_list(String) ->
+encode1([], #encode_profile{return=Return}, _, String) when is_list(String) ->
     ReturnString = lists:reverse(String),
-    case EncodeProfile#encode_profile.return of
+    case Return of
         list   -> ReturnString;
         binary -> erlang:list_to_binary(ReturnString)
     end;
-encode1([Code | RestCodes], #encode_profile{encode_dict=EncodeDict,error=Error, error_replace_char=ErrorReplaceChar}=EncodeProfile, Pos, String) when is_integer(Pos), is_list(String) ->
+encode1([Code | RestCodes], EncodeProfile=#encode_profile{encode_dict=EncodeDict,error=Error, error_replace_char=ErrorReplaceChar}, Pos, String) when is_integer(Pos), is_list(String) ->
     case dict:find(Code, EncodeDict) of
         {ok, MultibyteChar} ->
             case MultibyteChar > 16#FF of
@@ -158,7 +158,7 @@ decode(Binary, Encoding, OptionDict) when is_binary(Binary), is_atom(Encoding), 
 
 decode1(<<>>, _, _, Unicode) when is_list(Unicode) ->
     lists:reverse(Unicode);
-decode1(<<LeadByte:8, Rest/binary>>, #decode_profile{undefined_set=UndefinedSet, leadbytes_set=LeadbytesSet, decode_dict=DecodeDict, error=Error, error_replace_char=ErrorReplaceChar}=DecodeProfile, Pos, Unicode) when is_integer(Pos), is_list(Unicode) ->
+decode1(<<LeadByte:8, Rest/binary>>, DecodeProfile=#decode_profile{undefined_set=UndefinedSet, leadbytes_set=LeadbytesSet, decode_dict=DecodeDict, error=Error, error_replace_char=ErrorReplaceChar}, Pos, Unicode) when is_integer(Pos), is_list(Unicode) ->
     case sets:is_element(LeadByte, UndefinedSet) of
         true ->
             case Error of
