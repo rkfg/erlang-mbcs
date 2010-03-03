@@ -1,6 +1,8 @@
 -module(mb_unicode).
 -export([encodings/0, init/0, decode/3, encode/3]).
 
+-include_lib("mb/include/mb.hrl").
+
 encodings() ->
     [
     utf8,
@@ -30,32 +32,32 @@ codecs_info(utf32be) ->
 init() ->
     ok.
 
-encode(Unicode, Encoding, OptionDict) when is_list(Unicode), is_atom(Encoding), is_tuple(OptionDict) ->
+encode(Unicode, Encoding, #mb_options{return=Return, bom=Bom}) when is_list(Unicode), is_atom(Encoding) ->
     {NewEncoding} = codecs_info(Encoding),
     NewUnicode  =   case Unicode of
                         [16#FEFF, RestCodes] ->
-                            case dict:find(bom, OptionDict) of
-                                {ok, true} ->
+                            case Bom of
+                                true ->
                                     Unicode;
-                                {ok, false} ->
+                                false ->
                                     RestCodes
                             end;
                         Unicode ->
-                            case dict:find(bom, OptionDict) of
-                                {ok, true} ->
+                            case Bom of
+                                true ->
                                     [16#FEFF, Unicode];
-                                {ok, false} ->
+                                false ->
                                     Unicode
                             end
                     end,
     Binary = unicode:characters_to_binary(NewUnicode, unicode, NewEncoding),
-    case dict:find(return, OptionDict) of
-        {ok, list} ->
+    case Return of
+        list ->
             erlang:binary_to_list(Binary);
-        {ok, binary} ->
+        binary ->
             Binary
     end.
 
-decode(Binary, Encoding, OptionDict) when is_binary(Binary), is_atom(Encoding), is_tuple(OptionDict) ->
+decode(Binary, Encoding, #mb_options{}) when is_binary(Binary), is_atom(Encoding) ->
     {NewEncoding} = codecs_info(Encoding),
     unicode:characters_to_list(Binary, NewEncoding).

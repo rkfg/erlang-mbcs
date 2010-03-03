@@ -1,6 +1,8 @@
 -module(mb_mbcs).
 -export([encodings/0, init/0, decode/3, encode/3]).
 
+-include_lib("mb/include/mb.hrl").
+
 -record(encode_profile, {
       encode_dict        :: dict(),            % encode mapping dict
       return             :: atom(),            % return format, binary or list
@@ -103,14 +105,14 @@ init() ->
                 end,
                 encodings()).
 
-encode(Unicode, Encoding, OptionDict) when is_list(Unicode), is_atom(Encoding), is_tuple(OptionDict) ->
+encode(Unicode, Encoding, #mb_options{return=Return, error=Error, error_replace_char=ErrorReplaceChar}) when is_list(Unicode), is_atom(Encoding) ->
     {PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = codecs_info(Encoding),
     case erlang:get(PROCESS_DICT_ATOM) of
         {_, {EncodeDict}} ->
             EncodeProfile = #encode_profile{encode_dict        = EncodeDict,
-                                            return             = dict:fetch(return, OptionDict),
-                                            error              = dict:fetch(error, OptionDict),
-                                            error_replace_char = dict:fetch(error_replace_char, OptionDict)},
+                                            return             = Return,
+                                            error              = Error,
+                                            error_replace_char = ErrorReplaceChar},
             encode1(Unicode, EncodeProfile, 1, []);
         _OtherDict ->
             {error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, PROCESS_DICT_ATOM}, {detail, "maybe you should call mb:init() first"}]}}
@@ -142,15 +144,15 @@ encode1([Code | RestCodes], EncodeProfile=#encode_profile{encode_dict=EncodeDict
             end
     end.
 
-decode(Binary, Encoding, OptionDict) when is_binary(Binary), is_atom(Encoding), is_tuple(OptionDict) ->
+decode(Binary, Encoding, #mb_options{error=Error, error_replace_char=ErrorReplaceChar}) when is_binary(Binary), is_atom(Encoding) ->
     {PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = codecs_info(Encoding), 
     case erlang:get(PROCESS_DICT_ATOM) of
         {{DecodeUndefinedSet, DecodeLeadByteSet, DecodeDict}, _} ->
             DecodeProfile = #decode_profile{undefined_set      = DecodeUndefinedSet, 
                                             leadbytes_set      = DecodeLeadByteSet, 
                                             decode_dict        = DecodeDict, 
-                                            error              = dict:fetch(error, OptionDict),
-                                            error_replace_char = dict:fetch(error_replace_char, OptionDict)},
+                                            error              = Error,
+                                            error_replace_char = ErrorReplaceChar},
             decode1(Binary, DecodeProfile, 1, []);
         _OtherDict ->
             {error, {cannot_decode, [{reson, illegal_process_dict}, {process_dict, PROCESS_DICT_ATOM}, {detail, "maybe you should call mb:init() first"}]}}

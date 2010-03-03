@@ -18,18 +18,11 @@
 %%
 -module(mb).
 -export([init/0, encode/2, encode/3, decode/2, decode/3]).
+-include_lib("mb/include/mb.hrl").
+
 -define(CODECS, mb_codecs).
--define(ENCODE_OPTIONS_DEFAULT, [{return, binary}, {error, strict}, {error_replace_char, $?}, {bom, false}]).
--define(DECODE_OPTIONS_DEFAULT, [{return, binary}, {error, strict}, {error_replace_char, 16#FFFD}]).
-
-%%---------------------------------------------------------------------------
-
--type unicode()  :: [non_neg_integer()].
--type encoding() :: 'cp874' | 'iso_8859_11' | 'cp1250' | 'cp1251' | 'cp1252' | 'cp1253' | 'cp1254' | 'cp1255' | 'cp1256' | 'cp1257' | 'cp1258' | 'cp932' | 'cp936' | 'gbk' | 'cp949' | 'cp950' | 'big5' | 'utf8' | 'utf16' | 'utf16le' | 'utf16be' | 'utf32' | 'utf32le' | 'utf32be'.
--type option()   :: {return, list} | {return, binary} | {error, strict} | {error, ignore} | {error, replace} | {error_replace_char, non_neg_integer()} | {bom, true} | {bom, false}.
--type options()  :: [option()].
-
-%%---------------------------------------------------------------------------
+-define(MB_ENCODE_OPTIONS_DEFAULT, [{return, binary}, {error, strict}, {error_replace_char, $?}, {bom, false}]).
+-define(MB_DECODE_OPTIONS_DEFAULT, [{return, binary}, {error, strict}, {error_replace_char, 16#FFFD}]).
 
 %% @spec init() -> ok
 %%
@@ -61,38 +54,37 @@ init() ->
 
 %%---------------------------------------------------------------------------
 
-%% @spec parse_options(Options, OptionsDefault) -> {ok, OptionDict} | {error, Reason}
+%% @spec parse_options(Options, OptionsDefault) -> {ok, MBOptions} | {error, Reason}
 %%
-%% @doc Parse Options List to Option Dict, Return {ok, OptionDict} or {error, Reason}.
+%% @doc Parse Options List to Option Dict, Return {ok, MBOptions} or {error, Reason}.
 
--spec parse_options(Options::options(), OptionsDefault::list()) -> {ok, dict()} | {error, tuple()}.
+-spec parse_options(Options::options(), OptionsDefault::list()) -> {ok, #mb_options{}} | {error, tuple()}.
 
 parse_options(Options, OptionsDefault) when is_list(Options), is_list(OptionsDefault) ->
-    parse_options1(Options, dict:from_list(OptionsDefault)).
+    parse_options1(OptionsDefault ++ Options, #mb_options{}).
 
-parse_options1([], OptionDict) ->
-    {ok, OptionDict};
-parse_options1([Option | OptionsTail], OptionDict) ->
-    case Option of
-        {return, binary} ->
-            parse_options1(OptionsTail, dict:store(return, binary, OptionDict));
-        {return, list} ->   
-            parse_options1(OptionsTail, dict:store(return, list, OptionDict));
-        {error, ignore} -> 
-            parse_options1(OptionsTail, dict:store(error, ignore, OptionDict));
-        {error, strict} -> 
-            parse_options1(OptionsTail, dict:store(error, strict, OptionDict));
-        {error, replace} -> 
-            parse_options1(OptionsTail, dict:store(error, replace, OptionDict));
-        {replace, Char} when is_integer(Char) -> 
-            parse_options1(OptionsTail, dict:store(error_replace_char, Char, dict:store(error, replace, OptionDict)));
-        {bom, true} -> 
-            parse_options1(OptionsTail, dict:store(bom, true, OptionDict));
-        {bom, false}->
-            parse_options1(OptionsTail, dict:store(bom, false, OptionDict));
-        UnknownOption ->
-            {error, {cannot_encode, [{reason, unknown_option}, {option, UnknownOption}]}}
-    end.
+parse_options1([], MBOptions=#mb_options{}) ->
+    {ok, MBOptions};
+parse_options1([{return, binary} | Tail], MBOptions=#mb_options{}) ->
+    parse_options1(Tail, MBOptions#mb_options{return=binary});
+parse_options1([{return, list} | Tail], MBOptions=#mb_options{}) ->
+    parse_options1(Tail, MBOptions#mb_options{return=list});
+parse_options1([{error, ignore} | Tail], MBOptions=#mb_options{}) ->
+    parse_options1(Tail, MBOptions#mb_options{error=ignore});
+parse_options1([{error, strict} | Tail], MBOptions=#mb_options{}) ->
+    parse_options1(Tail, MBOptions#mb_options{error=strict});
+parse_options1([{error, replace} | Tail], MBOptions=#mb_options{}) ->
+    parse_options1(Tail, MBOptions#mb_options{error=replace});
+parse_options1([{replace, Char} | Tail], MBOptions=#mb_options{}) when is_integer(Char)->
+    parse_options1(Tail, MBOptions#mb_options{error=replace, error_replace_char=Char});
+parse_options1([{error_replace_char, Char} | Tail], MBOptions=#mb_options{}) when is_integer(Char)->
+    parse_options1(Tail, MBOptions#mb_options{error_replace_char=Char});
+parse_options1([{bom, true} | Tail], MBOptions=#mb_options{}) ->
+    parse_options1(Tail, MBOptions#mb_options{bom=true});
+parse_options1([{bom, false} | Tail], MBOptions=#mb_options{}) ->
+    parse_options1(Tail, MBOptions#mb_options{bom=false});
+parse_options1([UnknownOption | _], #mb_options{}) ->
+    {error, {cannot_encode, [{reason, unknown_option}, {option, UnknownOption}]}}.
 
 %% ---------------------------------------------------------------------
 
@@ -122,9 +114,9 @@ encode(Unicode, Encoding, Options) when is_list(Unicode), is_atom(Encoding), is_
         CodecsDict ->
             case dict:find(Encoding, CodecsDict) of
                 {ok, Mod} ->
-                    case parse_options(Options, ?ENCODE_OPTIONS_DEFAULT) of
-                        {ok, OptionDict} ->
-                            Mod:encode(Unicode, Encoding, OptionDict);
+                    case parse_options(Options, ?MB_ENCODE_OPTIONS_DEFAULT) of
+                        {ok, MBOptions} ->
+                            Mod:encode(Unicode, Encoding, MBOptions);
                         {error, Reason} ->
                             {error, Reason}
                     end;
@@ -170,9 +162,9 @@ decode(Binary, Encoding, Options) when is_binary(Binary), is_atom(Encoding), is_
         CodecsDict ->
             case dict:find(Encoding, CodecsDict) of
                 {ok, Mod} ->
-                    case parse_options(Options, ?DECODE_OPTIONS_DEFAULT) of
-                        {ok, OptionDict} ->
-                            Mod:decode(Binary, Encoding, OptionDict);
+                    case parse_options(Options, ?MB_DECODE_OPTIONS_DEFAULT) of
+                        {ok, MBOptions} ->
+                            Mod:decode(Binary, Encoding, MBOptions);
                         {error, Reason} ->
                             {error, Reason}
                     end;
