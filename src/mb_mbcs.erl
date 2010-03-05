@@ -12,13 +12,32 @@
 
 encodings() ->
     [
+    cp037,
+    cp437,
+    cp500,
+    cp737,
+    cp775,
+    cp850,
+    cp852,
+    cp855,
+    cp857,
+    cp860,
+    cp861,
+    cp862,
+    cp863,
+    cp864,
+    cp865,
+    cp866,
+    cp869,
     cp874,
+    cp875,
     cp932,
     cp936,
     gbk,
     cp949,
     cp950,
     big5,
+    cp1026,
     cp1250,
     cp1251,
     cp1252,
@@ -27,11 +46,53 @@ encodings() ->
     cp1255,
     cp1256,
     cp1257,
-    cp1258
+    cp1258,
+    cp10000,
+    cp10006,
+    cp10007,
+    cp10029,
+    cp10079,
+    cp10081
     ].
-    
+
+codecs_info(cp037) ->
+    {mb_codecs_cp037, "CP037.CONF", "CP037.BIN"};
+codecs_info(cp437) ->
+    {mb_codecs_cp437, "CP437.CONF", "CP437.BIN"};
+codecs_info(cp500) ->
+    {mb_codecs_cp500, "CP500.CONF", "CP500.BIN"};
+codecs_info(cp737) ->
+    {mb_codecs_cp737, "CP737.CONF", "CP737.BIN"};
+codecs_info(cp775) ->
+    {mb_codecs_cp775, "CP775.CONF", "CP775.BIN"};
+codecs_info(cp850) ->
+    {mb_codecs_cp850, "CP850.CONF", "CP850.BIN"};
+codecs_info(cp852) ->
+    {mb_codecs_cp852, "CP852.CONF", "CP852.BIN"};
+codecs_info(cp855) ->
+    {mb_codecs_cp855, "CP855.CONF", "CP855.BIN"};
+codecs_info(cp857) ->
+    {mb_codecs_cp857, "CP857.CONF", "CP857.BIN"};
+codecs_info(cp860) ->
+    {mb_codecs_cp860, "CP860.CONF", "CP860.BIN"};
+codecs_info(cp861) ->
+    {mb_codecs_cp861, "CP861.CONF", "CP861.BIN"};
+codecs_info(cp862) ->
+    {mb_codecs_cp862, "CP862.CONF", "CP862.BIN"};
+codecs_info(cp863) ->
+    {mb_codecs_cp863, "CP863.CONF", "CP863.BIN"};
+codecs_info(cp864) ->
+    {mb_codecs_cp864, "CP864.CONF", "CP864.BIN"};
+codecs_info(cp865) ->
+    {mb_codecs_cp865, "CP865.CONF", "CP865.BIN"};
+codecs_info(cp866) ->
+    {mb_codecs_cp866, "CP866.CONF", "CP866.BIN"};
+codecs_info(cp869) ->
+    {mb_codecs_cp869, "CP869.CONF", "CP869.BIN"};
 codecs_info(cp874) ->
     {mb_codecs_cp874, "CP874.CONF", "CP874.BIN"};
+codecs_info(cp875) ->
+    {mb_codecs_cp875, "CP875.CONF", "CP875.BIN"};
 codecs_info(cp932) ->
     {mb_codecs_cp932, "CP932.CONF", "CP932.BIN"};
 codecs_info(cp936) ->
@@ -44,6 +105,8 @@ codecs_info(cp950) ->
     {mb_codecs_cp950, "CP950.CONF", "CP950.BIN"};
 codecs_info(big5) ->
     {mb_codecs_cp950, "CP950.CONF", "CP950.BIN"};
+codecs_info(cp1026) ->
+    {mb_codecs_cp037, "CP1026.CONF", "CP1026.BIN"};
 codecs_info(cp1250) ->
     {mb_codecs_cp1250, "CP1250.CONF", "CP1250.BIN"};
 codecs_info(cp1251) ->
@@ -61,7 +124,20 @@ codecs_info(cp1256) ->
 codecs_info(cp1257) ->
     {mb_codecs_cp1257, "CP1257.CONF", "CP1257.BIN"};
 codecs_info(cp1258) ->
-    {mb_codecs_cp1258, "CP1258.CONF", "CP1258.BIN"}.
+    {mb_codecs_cp1258, "CP1258.CONF", "CP1258.BIN"};
+codecs_info(cp10000) ->
+    {mb_codecs_cp10000, "CP10000.CONF", "CP10000.BIN"};
+codecs_info(cp10006) ->
+    {mb_codecs_cp10006, "CP10006.CONF", "CP10006.BIN"};
+codecs_info(cp10007) ->
+    {mb_codecs_cp10007, "CP10007.CONF", "CP10007.BIN"};
+codecs_info(cp10029) ->
+    {mb_codecs_cp10029, "CP10029.CONF", "CP10029.BIN"};
+codecs_info(cp10079) ->
+    {mb_codecs_cp10079, "CP10079.CONF", "CP10079.BIN"};
+codecs_info(cp10081) ->
+    {mb_codecs_cp10081, "CP10081.CONF", "CP10081.BIN"}.
+
 
 init(Encoding) ->
     {Processdict, Confname, Binname} = codecs_info(Encoding), 
