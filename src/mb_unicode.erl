@@ -32,7 +32,7 @@ codecs_info(utf32be) ->
 init() ->
     ok.
 
-encode(Unicode, Encoding, #mb_options{return=Return, bom=Bom}) when is_list(Unicode), is_atom(Encoding) ->
+encode(Unicode, Encoding, #mb_profile{return=Return, bom=Bom}) when is_list(Unicode), is_atom(Encoding) ->
     {NewEncoding} = codecs_info(Encoding),
     NewUnicode  =   case Unicode of
                         [16#FEFF, RestCodes] ->
@@ -58,6 +58,6 @@ encode(Unicode, Encoding, #mb_options{return=Return, bom=Bom}) when is_list(Unic
             Binary
     end.
 
-decode(Binary, Encoding, #mb_options{}) when is_binary(Binary), is_atom(Encoding) ->
+decode(Binary, Encoding, #mb_profile{}) when is_binary(Binary), is_atom(Encoding) ->
     {NewEncoding} = codecs_info(Encoding),
     unicode:characters_to_list(Binary, NewEncoding).

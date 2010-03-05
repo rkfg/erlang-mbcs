@@ -26,9 +26,10 @@
 
 %%---------------------------------------------------------------------------
 
--record(mb_options, {
+-record(mb_profile, {
 	  return             :: atom(),	            % file name
 	  error	             :: atom(),             % error method
 	  error_replace_char :: non_neg_integer(),	% error replace char
-	  bom                :: boolean()           % encode bom
+	  bom                :: boolean(),          % encode bom
+      codecs             :: tuple()             % dict/sets tuple.
 	 }).

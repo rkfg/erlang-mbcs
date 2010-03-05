@@ -54,36 +54,36 @@ init() ->
 
 %%---------------------------------------------------------------------------
 
-%% @spec parse_options(Options, OptionsDefault) -> {ok, MBOptions} | {error, Reason}
+%% @spec parse_options(Options, OptionsDefault) -> {ok, Profile} | {error, Reason}
 %%
-%% @doc Parse Options List to Option Dict, Return {ok, MBOptions} or {error, Reason}.
+%% @doc Parse Options List to Option Dict, Return {ok, Profile} or {error, Reason}.
 
--spec parse_options(Options::options(), OptionsDefault::list()) -> {ok, #mb_options{}} | {error, tuple()}.
+-spec parse_options(Options::options(), OptionsDefault::list()) -> {ok, #mb_profile{}} | {error, tuple()}.
 
 parse_options(Options, OptionsDefault) when is_list(Options), is_list(OptionsDefault) ->
-    parse_options1(OptionsDefault ++ Options, #mb_options{}).
+    parse_options1(OptionsDefault ++ Options, #mb_profile{}).
 
-parse_options1([], MBOptions=#mb_options{}) ->
-    {ok, MBOptions};
-parse_options1([{return, binary} | Tail], MBOptions=#mb_options{}) ->
-    parse_options1(Tail, MBOptions#mb_options{return=binary});
-parse_options1([{return, list} | Tail], MBOptions=#mb_options{}) ->
-    parse_options1(Tail, MBOptions#mb_options{return=list});
-parse_options1([{error, ignore} | Tail], MBOptions=#mb_options{}) ->
-    parse_options1(Tail, MBOptions#mb_options{error=ignore});
-parse_options1([{error, strict} | Tail], MBOptions=#mb_options{}) ->
-    parse_options1(Tail, MBOptions#mb_options{error=strict});
-parse_options1([{error, replace} | Tail], MBOptions=#mb_options{}) ->
-    parse_options1(Tail, MBOptions#mb_options{error=replace});
-parse_options1([{replace, Char} | Tail], MBOptions=#mb_options{}) when is_integer(Char)->
-    parse_options1(Tail, MBOptions#mb_options{error=replace, error_replace_char=Char});
-parse_options1([{error_replace_char, Char} | Tail], MBOptions=#mb_options{}) when is_integer(Char)->
-    parse_options1(Tail, MBOptions#mb_options{error_replace_char=Char});
-parse_options1([{bom, true} | Tail], MBOptions=#mb_options{}) ->
-    parse_options1(Tail, MBOptions#mb_options{bom=true});
-parse_options1([{bom, false} | Tail], MBOptions=#mb_options{}) ->
-    parse_options1(Tail, MBOptions#mb_options{bom=false});
-parse_options1([UnknownOption | _], #mb_options{}) ->
+parse_options1([], Profile=#mb_profile{}) ->
+    {ok, Profile};
+parse_options1([{return, binary} | Tail], Profile=#mb_profile{}) ->
+    parse_options1(Tail, Profile#mb_profile{return=binary});
+parse_options1([{return, list} | Tail], Profile=#mb_profile{}) ->
+    parse_options1(Tail, Profile#mb_profile{return=list});
+parse_options1([{error, ignore} | Tail], Profile=#mb_profile{}) ->
+    parse_options1(Tail, Profile#mb_profile{error=ignore});
+parse_options1([{error, strict} | Tail], Profile=#mb_profile{}) ->
+    parse_options1(Tail, Profile#mb_profile{error=strict});
+parse_options1([{error, replace} | Tail], Profile=#mb_profile{}) ->
+    parse_options1(Tail, Profile#mb_profile{error=replace});
+parse_options1([{replace, Char} | Tail], Profile=#mb_profile{}) when is_integer(Char)->
+    parse_options1(Tail, Profile#mb_profile{error=replace, error_replace_char=Char});
+parse_options1([{error_replace_char, Char} | Tail], Profile=#mb_profile{}) when is_integer(Char)->
+    parse_options1(Tail, Profile#mb_profile{error_replace_char=Char});
+parse_options1([{bom, true} | Tail], Profile=#mb_profile{}) ->
+    parse_options1(Tail, Profile#mb_profile{bom=true});
+parse_options1([{bom, false} | Tail], Profile=#mb_profile{}) ->
+    parse_options1(Tail, Profile#mb_profile{bom=false});
+parse_options1([UnknownOption | _], #mb_profile{}) ->
     {error, {cannot_encode, [{reason, unknown_option}, {option, UnknownOption}]}}.
 
 %% ---------------------------------------------------------------------
@@ -115,8 +115,8 @@ encode(Unicode, Encoding, Options) when is_list(Unicode), is_atom(Encoding), is_
             case dict:find(Encoding, CodecsDict) of
                 {ok, Mod} ->
                     case parse_options(Options, ?MB_ENCODE_OPTIONS_DEFAULT) of
-                        {ok, MBOptions} ->
-                            Mod:encode(Unicode, Encoding, MBOptions);
+                        {ok, Profile} ->
+                            Mod:encode(Unicode, Encoding, Profile);
                         {error, Reason} ->
                             {error, Reason}
                     end;
@@ -163,8 +163,8 @@ decode(Binary, Encoding, Options) when is_binary(Binary), is_atom(Encoding), is_
             case dict:find(Encoding, CodecsDict) of
                 {ok, Mod} ->
                     case parse_options(Options, ?MB_DECODE_OPTIONS_DEFAULT) of
-                        {ok, MBOptions} ->
-                            Mod:decode(Binary, Encoding, MBOptions);
+                        {ok, Profile} ->
+                            Mod:decode(Binary, Encoding, Profile);
                         {error, Reason} ->
                             {error, Reason}
                     end;
