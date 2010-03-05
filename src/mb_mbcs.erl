@@ -3,6 +3,13 @@
 
 -include_lib("mb/include/mb.hrl").
 
+-record(mbcs_codecs, {
+	  undefined    :: set(),	% undefine characters
+	  leadbytes	   :: set(),    % lead byte characters
+	  decode_dict  :: dict(),	% mbcs to unicode dict
+	  encode_dict  :: dict()    % unicode to mbcs dict
+	 }).
+
 encodings() ->
     [
     cp874,
@@ -73,12 +80,13 @@ init(Encoding) ->
             end;
         false ->
             {ok, [PropList]} = file:consult(Confpath),
-            DecodeUndefinedSet = sets:from_list(proplists:get_value(undefined,PropList)),
-            DecodeLeadByteSet = sets:from_list(proplists:get_value(leadbytes,PropList)),
+            Undefined = sets:from_list(proplists:get_value(undefined,PropList)),
+            LeadBytes = sets:from_list(proplists:get_value(leadbytes,PropList)),
             DecodeList = proplists:get_value(mapping,PropList),
             DecodeDict = dict:from_list(DecodeList),
             EncodeDict = dict:from_list([{Value, Key} || {Key, Value} <- DecodeList]),
-            ok = file:write_file(Binpath, term_to_binary({{DecodeUndefinedSet, DecodeLeadByteSet, DecodeDict}, {EncodeDict}})),
+            MbcsCodecs = #mbcs_codecs{undefined=Undefined, leadbytes=LeadBytes, decode_dict=DecodeDict, encode_dict=EncodeDict},
+            ok = file:write_file(Binpath, term_to_binary(MbcsCodecs)),
             init(Encoding)
     end.
     
@@ -91,8 +99,8 @@ init() ->
 encode(Unicode, Encoding, Profile=#mb_profile{}) when is_list(Unicode), is_atom(Encoding) ->
     {PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = codecs_info(Encoding),
     case erlang:get(PROCESS_DICT_ATOM) of
-        {_, {EncodeDict}} ->
-            encode1(Unicode, Profile#mb_profile{codecs={EncodeDict}}, 1, []);
+        Codecs when is_record(Codecs, mbcs_codecs) ->
+            encode1(Unicode, Profile#mb_profile{codecs=Codecs}, 1, []);
         _OtherDict ->
             {error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, PROCESS_DICT_ATOM}, {detail, "maybe you should call mb:init() first"}]}}
     end.
@@ -103,7 +111,7 @@ encode1([], #mb_profile{return=Return}, _, String) when is_list(String) ->
         list   -> ReturnString;
         binary -> erlang:list_to_binary(ReturnString)
     end;
-encode1([Code | RestCodes], Profile=#mb_profile{error=Error, error_replace_char=ErrorReplaceChar, codecs={EncodeDict}}, Pos, String) when is_integer(Pos), is_list(String) ->
+encode1([Code | RestCodes], Profile=#mb_profile{error=Error, error_replace_char=ErrorReplaceChar, codecs=#mbcs_codecs{encode_dict=EncodeDict}}, Pos, String) when is_integer(Pos), is_list(String) ->
     case dict:find(Code, EncodeDict) of
         {ok, MultibyteChar} ->
             case MultibyteChar > 16#FF of
@@ -126,15 +134,15 @@ encode1([Code | RestCodes], Profile=#mb_profile{error=Error, error_replace_char=
 decode(Binary, Encoding, Profile=#mb_profile{}) when is_binary(Binary), is_atom(Encoding) ->
     {PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = codecs_info(Encoding), 
     case erlang:get(PROCESS_DICT_ATOM) of
-        {{DecodeUndefinedSet, DecodeLeadByteSet, DecodeDict}, _} ->
-            decode1(Binary, Profile#mb_profile{codecs={DecodeUndefinedSet, DecodeLeadByteSet, DecodeDict}}, 1, []);
+        Codecs when is_record(Codecs, mbcs_codecs) ->
+            decode1(Binary, Profile#mb_profile{codecs=Codecs}, 1, []);
         _OtherDict ->
             {error, {cannot_decode, [{reson, illegal_process_dict}, {process_dict, PROCESS_DICT_ATOM}, {detail, "maybe you should call mb:init() first"}]}}
     end.
 
 decode1(<<>>, _, _, Unicode) when is_list(Unicode) ->
     lists:reverse(Unicode);
-decode1(<<LeadByte:8, Rest/binary>>, Profile=#mb_profile{error=Error, error_replace_char=ErrorReplaceChar, codecs={DecodeUndefinedSet, DecodeLeadbytesSet, DecodeDict}}, Pos, Unicode) when is_integer(Pos), is_list(Unicode) ->
+decode1(<<LeadByte:8, Rest/binary>>, Profile=#mb_profile{error=Error, error_replace_char=ErrorReplaceChar, codecs=#mbcs_codecs{undefined=DecodeUndefinedSet, leadbytes=DecodeLeadbytesSet, decode_dict=DecodeDict}}, Pos, Unicode) when is_integer(Pos), is_list(Unicode) ->
     case sets:is_element(LeadByte, DecodeUndefinedSet) of
         true ->
             case Error of
