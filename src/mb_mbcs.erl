@@ -97,12 +97,12 @@ init() ->
                 encodings()).
 
 encode(Unicode, Encoding, Profile=#mb_profile{}) when is_list(Unicode), is_atom(Encoding) ->
-    {PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = codecs_info(Encoding),
-    case erlang:get(PROCESS_DICT_ATOM) of
+    {ProcessDict, _, _} = codecs_info(Encoding),
+    case erlang:get(ProcessDict) of
         Codecs when is_record(Codecs, mbcs_codecs) ->
             encode1(Unicode, Profile#mb_profile{codecs=Codecs}, 1, []);
         _OtherDict ->
-            {error, {cannot_encode, [{reson, illegal_process_dict}, {process_dict, PROCESS_DICT_ATOM}, {detail, "maybe you should call mb:init() first"}]}}
+            {error, {illegal_process_dict, [{process_dict, ProcessDict}, {detail, "maybe you should call mb:init() first"}]}}
     end.
 
 encode1([], #mb_profile{return=Return}, _, String) when is_list(String) ->
@@ -127,17 +127,17 @@ encode1([Code | RestCodes], Profile=#mb_profile{error=Error, error_replace_char=
                 replace ->
                     encode1(RestCodes, Profile, Pos+1, [ErrorReplaceChar | String]);
                 strict ->
-                    {error, {cannot_encode, [{reason, unmapping_unicode}, {unicode, Code}, {pos, Pos}]}}
+                    {error, {unmapping_unicode, [{unicode, Code}, {pos, Pos}]}}
             end
     end.
 
 decode(Binary, Encoding, Profile=#mb_profile{}) when is_binary(Binary), is_atom(Encoding) ->
-    {PROCESS_DICT_ATOM, _CONF_NAME, _BIN_NAME} = codecs_info(Encoding), 
-    case erlang:get(PROCESS_DICT_ATOM) of
+    {ProcessDict, _, _} = codecs_info(Encoding), 
+    case erlang:get(ProcessDict) of
         Codecs when is_record(Codecs, mbcs_codecs) ->
             decode1(Binary, Profile#mb_profile{codecs=Codecs}, 1, []);
         _OtherDict ->
-            {error, {cannot_decode, [{reson, illegal_process_dict}, {process_dict, PROCESS_DICT_ATOM}, {detail, "maybe you should call mb:init() first"}]}}
+            {error, {illegal_process_dict, [{process_dict, ProcessDict}, {detail, "maybe you should call mb:init() first"}]}}
     end.
 
 decode1(<<>>, _, _, Unicode) when is_list(Unicode) ->
@@ -151,7 +151,7 @@ decode1(<<LeadByte:8, Rest/binary>>, Profile=#mb_profile{error=Error, error_repl
                 replace ->
                     decode1(Rest, Profile, Pos+1, [ErrorReplaceChar | Unicode]);
                 strict ->
-                    {error, {cannot_decode, [{reason, undefined_character}, {character, LeadByte}, {pos, Pos}]}}
+                    {error, {undefined_character, [{character, LeadByte}, {pos, Pos}]}}
             end;
         false ->
             case sets:size(DecodeLeadbytesSet) =/= 0 andalso sets:is_element(LeadByte, DecodeLeadbytesSet) of
@@ -166,7 +166,7 @@ decode1(<<LeadByte:8, Rest/binary>>, Profile=#mb_profile{error=Error, error_repl
                                 replace ->
                                     decode1(Rest, Profile, Pos+1, [ErrorReplaceChar | Unicode]);
                                 strict ->
-                                    {error, {cannot_decode, [{reason, unmapping_character}, {character, LeadByte}, {pos, Pos}]}}
+                                    {error, {unmapping_character, [{character, LeadByte}, {pos, Pos}]}}
                             end
                     end;
                 true ->
@@ -178,7 +178,7 @@ decode1(<<LeadByte:8, Rest/binary>>, Profile=#mb_profile{error=Error, error_repl
                                 replace ->
                                     decode1(Rest, Profile, Pos+1, [ErrorReplaceChar | Unicode]);
                                 strict ->
-                                    {error, {cannot_decode, [{reason, incomplete_multibyte_sequence}, {leadbyte, LeadByte}, {pos, Pos}]}}
+                                    {error, {incomplete_multibyte_sequence, [{leadbyte, LeadByte}, {pos, Pos}]}}
                             end;
                         _Any ->
                             <<FollowByte:8, Rest1/binary>> = Rest,
@@ -193,7 +193,7 @@ decode1(<<LeadByte:8, Rest/binary>>, Profile=#mb_profile{error=Error, error_repl
                                         replace ->
                                             decode1(Rest1, Profile, Pos+2, [ErrorReplaceChar | Unicode]);
                                         strict ->
-                                            {error, {cannot_decode, [{reason, unmapping_multibyte_character}, {multibyte_character, MultibyteChar}, {pos, Pos}]}}
+                                            {error, {unmapping_multibyte_character, [{multibyte_character, MultibyteChar}, {pos, Pos}]}}
                                     end
                             end
                     end
