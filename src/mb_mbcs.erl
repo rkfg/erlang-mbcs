@@ -161,7 +161,10 @@ init(Encoding) ->
             DecodeList = proplists:get_value(mapping,PropList),
             MBTable = dict:from_list(DecodeList),
             WCTable = dict:from_list([{Value, Key} || {Key, Value} <- DecodeList]),
-            MbcsCodecs = #mbcs_codecs{undefined=Undefined, leadbytes=LeadBytes, mbtable=MBTable, wctable=WCTable},
+            MbcsCodecs = #mbcs_codecs{undefined=Undefined, 
+                                      leadbytes=LeadBytes, 
+                                      mbtable=MBTable, 
+                                      wctable=WCTable},
             ok = file:write_file(Binpath, term_to_binary(MbcsCodecs)),
             init(Encoding)
     end.
@@ -172,13 +175,15 @@ init() ->
                 end,
                 encodings()).
 
-encode(Unicode, Encoding, Profile=#mb_profile{}) when is_list(Unicode), is_atom(Encoding) ->
+encode(Unicode, Encoding, Profile=#mb_profile{})
+  when is_list(Unicode), is_atom(Encoding) ->
     {ProcessDict, _, _} = codecs_info(Encoding),
     case erlang:get(ProcessDict) of
         Codecs when is_record(Codecs, mbcs_codecs) ->
             encode1(Unicode, Profile#mb_profile{codecs=Codecs}, 1, []);
         _OtherDict ->
-            {error, {illegal_process_dict, [{process_dict, ProcessDict}, {detail, "maybe you should call mb:init() first"}]}}
+            {error, {illegal_process_dict, [{process_dict, ProcessDict}, 
+                                            {detail, "need mb:init()"}]}}
     end.
 
 encode1([], #mb_profile{return=Return}, _, String) when is_list(String) ->
@@ -187,7 +192,13 @@ encode1([], #mb_profile{return=Return}, _, String) when is_list(String) ->
         list   -> ReturnString;
         binary -> erlang:list_to_binary(ReturnString)
     end;
-encode1([Code | RestCodes], Profile=#mb_profile{error=Error, error_replace_char=ErrorReplaceChar, codecs=#mbcs_codecs{wctable=EncodeDict}}, Pos, String) when is_integer(Pos), is_list(String) ->
+encode1([Code | RestCodes], 
+        Profile=#mb_profile{error=Error, 
+                            error_replace_char=ErrorReplaceChar, 
+                            codecs=#mbcs_codecs{wctable=EncodeDict}}, 
+        Pos, 
+        String) 
+  when is_integer(Pos), is_list(String) ->
     case dict:find(Code, EncodeDict) of
         {ok, MultibyteChar} ->
             case MultibyteChar > 16#FF of
@@ -207,18 +218,28 @@ encode1([Code | RestCodes], Profile=#mb_profile{error=Error, error_replace_char=
             end
     end.
 
-decode(Binary, Encoding, Profile=#mb_profile{}) when is_binary(Binary), is_atom(Encoding) ->
+decode(Binary, Encoding, Profile=#mb_profile{}) 
+  when is_binary(Binary), is_atom(Encoding) ->
     {ProcessDict, _, _} = codecs_info(Encoding), 
     case erlang:get(ProcessDict) of
         Codecs when is_record(Codecs, mbcs_codecs) ->
             decode1(Binary, Profile#mb_profile{codecs=Codecs}, 1, []);
         _OtherDict ->
-            {error, {illegal_process_dict, [{process_dict, ProcessDict}, {detail, "maybe you should call mb:init() first"}]}}
+            {error, {illegal_process_dict, [{process_dict, ProcessDict}, 
+                                            {detail, "need mb:init()"}]}}
     end.
 
 decode1(<<>>, _, _, Unicode) when is_list(Unicode) ->
     lists:reverse(Unicode);
-decode1(<<LeadByte:8, Rest/binary>>, Profile=#mb_profile{error=Error, error_replace_char=ErrorReplaceChar, codecs=#mbcs_codecs{undefined=DecodeUndefinedSet, leadbytes=DecodeLeadbytesSet, mbtable=DecodeDict}}, Pos, Unicode) when is_integer(Pos), is_list(Unicode) ->
+decode1(<<LeadByte:8, Rest/binary>>, 
+        Profile=#mb_profile{error=Error, 
+                            error_replace_char=ErrorReplaceChar, 
+                            codecs=#mbcs_codecs{undefined=DecodeUndefinedSet, 
+                                                leadbytes=DecodeLeadbytesSet, 
+                                                mbtable=DecodeDict}}, 
+        Pos, 
+        Unicode) 
+  when is_integer(Pos), is_list(Unicode) ->
     case sets:is_element(LeadByte, DecodeUndefinedSet) of
         true ->
             case Error of
@@ -227,7 +248,8 @@ decode1(<<LeadByte:8, Rest/binary>>, Profile=#mb_profile{error=Error, error_repl
                 replace ->
                     decode1(Rest, Profile, Pos+1, [ErrorReplaceChar | Unicode]);
                 strict ->
-                    {error, {undefined_character, [{character, LeadByte}, {pos, Pos}]}}
+                    {error, {undefined_character, [{character, LeadByte}, 
+                                                   {pos, Pos}]}}
             end;
         false ->
             case sets:size(DecodeLeadbytesSet) =/= 0 andalso sets:is_element(LeadByte, DecodeLeadbytesSet) of
