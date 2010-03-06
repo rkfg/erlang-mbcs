@@ -4,10 +4,10 @@
 -include_lib("mb/include/mb.hrl").
 
 -record(mbcs_codecs, {
-	  undefined    :: set(),	% undefine characters
-	  leadbytes	   :: set(),    % lead byte characters
-	  decode_dict  :: dict(),	% mbcs to unicode dict
-	  encode_dict  :: dict()    % unicode to mbcs dict
+	  undefined    :: set(),	% undefine bytes
+	  leadbytes	   :: set(),    % dbcs lead bytes
+	  mbtable      :: dict(),	% multiple byte to wide character table
+	  wctable      :: dict()    % wide character to multiple byte table
 	 }).
 
 encodings() ->
@@ -159,9 +159,9 @@ init(Encoding) ->
             Undefined = sets:from_list(proplists:get_value(undefined,PropList)),
             LeadBytes = sets:from_list(proplists:get_value(leadbytes,PropList)),
             DecodeList = proplists:get_value(mapping,PropList),
-            DecodeDict = dict:from_list(DecodeList),
-            EncodeDict = dict:from_list([{Value, Key} || {Key, Value} <- DecodeList]),
-            MbcsCodecs = #mbcs_codecs{undefined=Undefined, leadbytes=LeadBytes, decode_dict=DecodeDict, encode_dict=EncodeDict},
+            MBTable = dict:from_list(DecodeList),
+            WCTable = dict:from_list([{Value, Key} || {Key, Value} <- DecodeList]),
+            MbcsCodecs = #mbcs_codecs{undefined=Undefined, leadbytes=LeadBytes, mbtable=MBTable, wctable=WCTable},
             ok = file:write_file(Binpath, term_to_binary(MbcsCodecs)),
             init(Encoding)
     end.
@@ -187,7 +187,7 @@ encode1([], #mb_profile{return=Return}, _, String) when is_list(String) ->
         list   -> ReturnString;
         binary -> erlang:list_to_binary(ReturnString)
     end;
-encode1([Code | RestCodes], Profile=#mb_profile{error=Error, error_replace_char=ErrorReplaceChar, codecs=#mbcs_codecs{encode_dict=EncodeDict}}, Pos, String) when is_integer(Pos), is_list(String) ->
+encode1([Code | RestCodes], Profile=#mb_profile{error=Error, error_replace_char=ErrorReplaceChar, codecs=#mbcs_codecs{wctable=EncodeDict}}, Pos, String) when is_integer(Pos), is_list(String) ->
     case dict:find(Code, EncodeDict) of
         {ok, MultibyteChar} ->
             case MultibyteChar > 16#FF of
@@ -218,7 +218,7 @@ decode(Binary, Encoding, Profile=#mb_profile{}) when is_binary(Binary), is_atom(
 
 decode1(<<>>, _, _, Unicode) when is_list(Unicode) ->
     lists:reverse(Unicode);
-decode1(<<LeadByte:8, Rest/binary>>, Profile=#mb_profile{error=Error, error_replace_char=ErrorReplaceChar, codecs=#mbcs_codecs{undefined=DecodeUndefinedSet, leadbytes=DecodeLeadbytesSet, decode_dict=DecodeDict}}, Pos, Unicode) when is_integer(Pos), is_list(Unicode) ->
+decode1(<<LeadByte:8, Rest/binary>>, Profile=#mb_profile{error=Error, error_replace_char=ErrorReplaceChar, codecs=#mbcs_codecs{undefined=DecodeUndefinedSet, leadbytes=DecodeLeadbytesSet, mbtable=DecodeDict}}, Pos, Unicode) when is_integer(Pos), is_list(Unicode) ->
     case sets:is_element(LeadByte, DecodeUndefinedSet) of
         true ->
             case Error of
