@@ -20,8 +20,8 @@
 %%---------------------------------------------------------------------------
 
 -type unicode()  :: [non_neg_integer()].
--type encoding() :: 'cp874' | 'iso_8859_11' | 'cp1250' | 'cp1251' | 'cp1252' | 'cp1253' | 'cp1254' | 'cp1255' | 'cp1256' | 'cp1257' | 'cp1258' | 'cp932' | 'cp936' | 'gbk' | 'cp949' | 'cp950' | 'big5' | 'utf8' | 'utf16' | 'utf16le' | 'utf16be' | 'utf32' | 'utf32le' | 'utf32be'.
--type option()   :: {return, list} | {return, binary} | {error, strict} | {error, ignore} | {error, replace} | {error_replace_char, non_neg_integer()} | {bom, true} | {bom, false}.
+-type encoding() :: atom().
+-type option()   :: {atom(), term()}.
 -type options()  :: [option()].
 
 %%---------------------------------------------------------------------------

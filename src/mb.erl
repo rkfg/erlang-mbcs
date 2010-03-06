@@ -21,8 +21,13 @@
 -include_lib("mb/include/mb.hrl").
 
 -define(CODECS, mb_codecs).
--define(MB_ENCODE_OPTIONS_DEFAULT, [{return, binary}, {error, strict}, {error_replace_char, $?}, {bom, false}]).
--define(MB_DECODE_OPTIONS_DEFAULT, [{return, binary}, {error, strict}, {error_replace_char, 16#FFFD}]).
+-define(MB_ENCODE_OPTIONS_DEFAULT, [{return, binary}, 
+                                    {error, strict}, 
+                                    {error_replace_char, $?}, 
+                                    {bom, false}]).
+-define(MB_DECODE_OPTIONS_DEFAULT, [{return, binary}, 
+                                    {error, strict}, 
+                                    {error_replace_char, 16#FFFD}]).
 
 %% @spec init() -> ok
 %%
@@ -90,7 +95,7 @@ parse_options1([UnknownOption | _], #mb_profile{}) ->
 
 %% @spec encode(Unicode::unicode(), Encoding::encoding()) -> binary()
 %%
-%% @doc Equivalent to encode(Unicode, Encoding, []).
+%% @equiv encode(Unicode, Encoding, [])
 %%
 %% @see encode/3
 
@@ -100,6 +105,11 @@ encode(Unicode, Encoding) when is_list(Unicode), is_atom(Encoding) ->
     encode(Unicode, Encoding, []).
 
 %% @spec encode(Unicode::unicode(), Encoding::encoding(), Options::options()) -> binary() | string()
+%%
+%%	    Unicode  = [non_neg_integer()]
+%%	    Encoding = 'cp874' | 'cp1250' | 'cp1251' | 'cp1252' | 'cp1253' | 'cp1254' | 'cp1255' | 'cp1256' | 'cp1257' | 'cp1258' | 'cp932' | 'cp936' | 'gbk' | 'cp949' | 'cp950' | 'big5' | 'utf8' | 'utf16' | 'utf16le' | 'utf16be' | 'utf32' | 'utf32le' | 'utf32be'
+%%      Options  = [Option]
+%%      Option   = {return, list} | {return, binary} | {error, strict} | {error, ignore} | {error, replace} | {replace, non_neg_integer()} | {bom, true} | {bom, false}
 %%
 %% @doc Return a Binary or String.
 %%
@@ -129,7 +139,7 @@ encode(Unicode, Encoding, Options) when is_list(Unicode), is_atom(Encoding), is_
 
 %% @spec decode(StringOrBinary::string()|binary(), Encoding::encoding()) -> unicode()
 %%
-%% @doc Equivalent to decode(StringOrBinary, Encoding, []).
+%% @equiv decode(StringOrBinary, Encoding, [])
 %%
 %% @see decode/3
 
@@ -141,6 +151,11 @@ decode(Binary, Encoding) when is_binary(Binary), is_atom(Encoding) ->
     decode(Binary, Encoding, []).
 
 %% @spec decode(StringOrBinary::string()|binary(), Encoding::encoding(), Options::options()) -> unicode()
+%%
+%%	    StringOrBinary  = string()|binary()
+%%	    Encoding        = 'cp874' | 'cp1250' | 'cp1251' | 'cp1252' | 'cp1253' | 'cp1254' | 'cp1255' | 'cp1256' | 'cp1257' | 'cp1258' | 'cp932' | 'cp936' | 'gbk' | 'cp949' | 'cp950' | 'big5' | 'utf8' | 'utf16' | 'utf16le' | 'utf16be' | 'utf32' | 'utf32le' | 'utf32be'
+%%      Options         = [Option]
+%%      Option          = {return, list} | {return, binary} | {error, strict} | {error, ignore} | {error, replace} | {replace, non_neg_integer()} | {bom, true} | {bom, false}
 %%
 %% @doc Return a Unicode.
 %%
