@@ -17,81 +17,22 @@
 %% %CopyrightEnd%
 %%
 -module(mb).
--export([init/0, encode/2, encode/3, decode/2, decode/3]).
+-export([start/0, encode/2, encode/3, decode/2, decode/3]).
 -include_lib("mb/include/mb.hrl").
 
--define(CODECS, mb_codecs).
--define(MB_ENCODE_OPTIONS_DEFAULT, [{return, binary}, 
-                                    {error, strict}, 
-                                    {error_replace_char, $?}, 
-                                    {bom, false}]).
--define(MB_DECODE_OPTIONS_DEFAULT, [{return, binary}, 
-                                    {error, strict}, 
-                                    {error_replace_char, 16#FFFD}]).
-
-%% @spec init() -> ok
+%% @spec start() -> {ok, Pid}
 %%
-%% @doc Load all codecs to process dict memory, Return ok.
+%% @doc Start mb server, Return {ok, Pid}.
 
--spec init() -> ok.
+-spec start() -> ok.
 
-init() ->
-    Modules = [
-                mb_mbcs, 
-                mb_unicode,
-                mb_gb18030
-              ],
-    lists:foreach(fun(Mod) ->
-                ok = Mod:init()
-            end,
-            Modules),
-    CodecsDict = dict:from_list(
-                    lists:append(
-                        [
-                            [{Enc, Mod} || Enc <- Mod:encodings()] 
-                                || Mod <- Modules
-                        ])
-                    ),
-    erlang:put(?CODECS, CodecsDict),
-    ok.
-
-%%---------------------------------------------------------------------------
-
-%% @spec parse_options(Options, Default) -> {ok, Profile} | {error, Reason}
-%%
-%% @doc Parse Options List to Option Dict,
-%%      Return {ok, Profile} | {error, Reason}.
-
--spec parse_options(options(), options()) -> {ok, #mb_profile{}} | {error, tuple()}.
-
-parse_options(Options, OptionsDefault) 
-  when is_list(Options), is_list(OptionsDefault) ->
-    parse_options1(OptionsDefault ++ Options, #mb_profile{}).
-
-parse_options1([], Profile=#mb_profile{}) ->
-    {ok, Profile};
-parse_options1([{return, binary} | Tail], Profile=#mb_profile{}) ->
-    parse_options1(Tail, Profile#mb_profile{return=binary});
-parse_options1([{return, list} | Tail], Profile=#mb_profile{}) ->
-    parse_options1(Tail, Profile#mb_profile{return=list});
-parse_options1([{error, ignore} | Tail], Profile=#mb_profile{}) ->
-    parse_options1(Tail, Profile#mb_profile{error=ignore});
-parse_options1([{error, strict} | Tail], Profile=#mb_profile{}) ->
-    parse_options1(Tail, Profile#mb_profile{error=strict});
-parse_options1([{error, replace} | Tail], Profile=#mb_profile{}) ->
-    parse_options1(Tail, Profile#mb_profile{error=replace});
-parse_options1([{replace, Char} | Tail], Profile=#mb_profile{}) 
-  when is_integer(Char)->
-    parse_options1(Tail, Profile#mb_profile{error=replace, error_replace_char=Char});
-parse_options1([{error_replace_char, Char} | Tail], Profile=#mb_profile{})
-  when is_integer(Char)->
-    parse_options1(Tail, Profile#mb_profile{error_replace_char=Char});
-parse_options1([{bom, true} | Tail], Profile=#mb_profile{}) ->
-    parse_options1(Tail, Profile#mb_profile{bom=true});
-parse_options1([{bom, false} | Tail], Profile=#mb_profile{}) ->
-    parse_options1(Tail, Profile#mb_profile{bom=false});
-parse_options1([UnknownOption | _], #mb_profile{}) ->
-    {error, {unknown_option, [{option, UnknownOption}]}}.
+start() ->
+    case mb_server:start() of
+        {ok, _Pid} ->
+            ok;
+        {error, {already_started, _App}} ->
+            ok
+    end.
 
 %% ---------------------------------------------------------------------
 
@@ -104,7 +45,10 @@ parse_options1([UnknownOption | _], #mb_profile{}) ->
 -spec encode(unicode(), encoding()) -> binary() | string() | {error, tuple()}.
 
 encode(Unicode, Encoding) when is_list(Unicode), is_atom(Encoding) ->
-    encode(Unicode, Encoding, []).
+    encode(Unicode, Encoding, []);
+encode(Unicode, {Encoding, Ending}) 
+  when is_list(Unicode), is_atom(Encoding), is_atom(Ending) ->
+    encode(Unicode, {Encoding, Ending}, []).
 
 %% @spec encode(Unicode, Encoding, Options) -> binary() | string() | {error, Reason}
 %%
@@ -175,24 +119,10 @@ encode(Unicode, Encoding) when is_list(Unicode), is_atom(Encoding) ->
 
 encode(Unicode, Encoding, Options) 
   when is_list(Unicode), is_atom(Encoding), is_list(Options) ->
-    case erlang:get(?CODECS) of
-        undefined ->
-            {error, {illegal_process_dict, [{process_dict, ?CODECS}, 
-                                            {detail, "need mb:init()"}]}};
-        CodecsDict ->
-            case dict:find(Encoding, CodecsDict) of
-                {ok, Mod} ->
-                    case parse_options(Options, ?MB_ENCODE_OPTIONS_DEFAULT) of
-                        {ok, Profile} ->
-                            Mod:encode(Unicode, Encoding, Profile);
-                        {error, Reason} ->
-                            {error, Reason}
-                    end;
-                error ->
-                    {error, {illegal_encoding, [{encoding, Encoding}, 
-                                                {line, ?LINE}]}}
-            end
-    end.
+    gen_server:call(mb_server, {encode, Unicode, Encoding, Options});
+encode(Unicode, {Encoding, Ending}, Options) 
+  when is_list(Unicode), is_atom(Encoding), is_atom(Ending), is_list(Options) ->
+    gen_server:call(mb_server, {encode, Unicode, {Encoding, Ending}, Options}).
 
 %% ---------------------------------------------------------------------
 
@@ -207,7 +137,13 @@ encode(Unicode, Encoding, Options)
 decode(String, Encoding) when is_list(String), is_atom(Encoding) ->
     decode(String, Encoding, []);
 decode(Binary, Encoding) when is_binary(Binary), is_atom(Encoding) ->
-    decode(Binary, Encoding, []).
+    decode(Binary, Encoding, []);
+decode(String, {Encoding, Ending}) 
+  when is_list(String), is_atom(Encoding), is_atom(Ending) ->
+    decode(String, {Encoding, Ending}, []);
+decode(Binary, {Encoding, Ending})
+  when is_binary(Binary), is_tuple(Encoding), is_atom(Ending) ->
+    decode(Binary, {Encoding, Ending}, []).
 
 %% @spec decode(StringOrBinary, Encoding, Options) -> unicode()
 %%
@@ -284,23 +220,17 @@ decode(String, Encoding, Options)
         Binary ->
             decode(Binary, Encoding, Options)
     end;
+decode(String, {Encoding, Ending}, Options) 
+  when is_list(String), is_atom(Encoding), is_atom(Ending), is_list(Options) ->
+    case catch list_to_binary(String) of
+        {'EXIT',{badarg, _}} ->
+            {error, {illegal_list, [{list, String}, {line, ?LINE}]}};
+        Binary ->
+            decode(Binary, {Encoding, Ending}, Options)
+    end;
 decode(Binary, Encoding, Options) 
   when is_binary(Binary), is_atom(Encoding), is_list(Options) ->
-    case erlang:get(?CODECS) of
-        undefined ->
-            {error, {illegal_process_dict, [{process_dict, ?CODECS}, 
-                                            {detail, "need mb:init()"}]}};
-        CodecsDict ->
-            case dict:find(Encoding, CodecsDict) of
-                {ok, Mod} ->
-                    case parse_options(Options, ?MB_DECODE_OPTIONS_DEFAULT) of
-                        {ok, Profile} ->
-                            Mod:decode(Binary, Encoding, Profile);
-                        {error, Reason} ->
-                            {error, Reason}
-                    end;
-                error ->
-                    {error, {illegal_encoding, [{encoding, Encoding}, 
-                                                {line, ?LINE}]}}
-            end
-    end.
+    gen_server:call(mb_server, {decode, Binary, Encoding, Options});
+decode(Binary, {Encoding, Ending}, Options) 
+  when is_binary(Binary), is_atom(Encoding), is_atom(Ending), is_list(Options) ->
+    gen_server:call(mb_server, {decode, Binary, {Encoding, Ending}, Options}).

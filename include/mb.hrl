@@ -1,7 +1,7 @@
 %%
 %% %CopyrightBegin%
 %% 
-%% Copyright Ericsson AB 2009-2010. All Rights Reserved.
+%% Copyright Xiangyu LU 2009-2010. All Rights Reserved.
 %% 
 %% The contents of this file are subject to the Erlang Public License,
 %% Version 1.1, (the "License"); you may not use this file except in
@@ -20,16 +20,6 @@
 %%---------------------------------------------------------------------------
 
 -type unicode()  :: [non_neg_integer()].
--type encoding() :: atom().
+-type encoding() :: atom() | {atom(), little} | {atom(), big}.
 -type option()   :: {atom(), term()}.
 -type options()  :: [option()].
-
-%%---------------------------------------------------------------------------
-
--record(mb_profile, {
-	  return             :: atom(),	            % file name
-	  error	             :: atom(),             % error method
-	  error_replace_char :: non_neg_integer(),	% error replace char
-	  bom                :: boolean(),          % encode bom
-      codecs             :: tuple()             % dict/sets tuple.
-	 }).
