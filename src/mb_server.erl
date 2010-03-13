@@ -140,8 +140,24 @@ do_encode(Unicode, Encoding, Options, State=#mb_server{codecs=Codecs}) ->
             {error, Reason}
     end.
 
-do_encode_unicode(Unicode, Encoding, #mb_options{return=Return}, _) ->
-    Binary = unicode:characters_to_binary(Unicode, unicode, Encoding),
+do_encode_unicode(Unicode, Encoding, #mb_options{return=Return, bom=Bom}, _) ->
+    NewUnicode  =   case Unicode of
+                        [16#FEFF, RestCodes] ->
+                            case Bom of
+                                true ->
+                                    Unicode;
+                                false ->
+                                    RestCodes
+                            end;
+                        Unicode ->
+                            case Bom of
+                                true ->
+                                    [16#FEFF, Unicode];
+                                false ->
+                                    Unicode
+                            end
+                    end,
+    Binary = unicode:characters_to_binary(NewUnicode, unicode, Encoding),
     case Return of
         binary ->
             Binary;
