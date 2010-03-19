@@ -32,7 +32,7 @@
 	 }).
 
 -record(mb_server, {
-	  codecs       :: dict(),	% codecs name to codees type 'unicode' | 'mbcs' | 'gb18030'
+	  codecs       :: dict(),	% codecs name to codecs type 'unicode' | 'mbcs' | 'gb18030'
 	  mbcs_codecs  :: dict()    % mbcs codecs name to #mbcs_codecs_item{}
 	 }).
      
@@ -47,9 +47,9 @@
 
 start() ->
     DictPath = code:priv_dir(mb),
-    {ok, CodecsDictBin} = file:read_file(DictPath ++ "/codecs.dict"),
+    {ok, CodecsList}  = file:consult(DictPath ++ "/codecs.conf"),
     {ok, MbcsDictBin} = file:read_file(DictPath ++ "/mbcs.dict"),
-    State = #mb_server{codecs = binary_to_term(CodecsDictBin),
+    State = #mb_server{codecs = dict:from_list(CodecsList),
                        mbcs_codecs = binary_to_term(MbcsDictBin)
                     },
     gen_server:start_link({local, ?MODULE}, ?MODULE, State, []).
@@ -129,10 +129,10 @@ do_encode(Unicode, Encoding, Options, State=#mb_server{codecs=Codecs}) ->
     case parse_options(Options, ?MB_ENCODE_OPTIONS_DEFAULT) of
         {ok, MbOptions} ->
             case dict:find(Encoding, Codecs) of
-                {ok, unicode} ->
-                    do_encode_unicode(Unicode, Encoding, MbOptions, State);
-                {ok, mbcs} ->
-                    do_encode_mbcs(Unicode, Encoding, MbOptions, State);
+                {ok, {RealEncoding, unicode}} ->
+                    do_encode_unicode(Unicode, RealEncoding, MbOptions, State);
+                {ok, {RealEncoding, mbcs}} ->
+                    do_encode_mbcs(Unicode, RealEncoding, MbOptions, State);
                 error   ->
                     {error, {unkonwn_encoding, [{encoding, Encoding}]}}
             end;
@@ -209,10 +209,10 @@ do_decode(Binary, Encoding, Options, State=#mb_server{codecs=Codecs}) ->
     case parse_options(Options, ?MB_DECODE_OPTIONS_DEFAULT) of
         {ok, MbOptions} ->
             case dict:find(Encoding, Codecs) of
-                {ok, unicode} ->
-                    do_decode_unicode(Binary, Encoding, MbOptions, State);
-                {ok, mbcs} ->
-                    do_decode_mbcs(Binary, Encoding, MbOptions, State);
+                {ok, {RealEncoding, unicode}} ->
+                    do_decode_unicode(Binary, RealEncoding, MbOptions, State);
+                {ok, {RealEncoding, mbcs}} ->
+                    do_decode_mbcs(Binary, RealEncoding, MbOptions, State);
                 error   ->
                     {error, {unkonwn_encoding, [{encoding, Encoding}]}}
             end;

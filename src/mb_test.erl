@@ -15,8 +15,8 @@ decode(String, Encoding, Options) ->
 
 mb_test_() ->
     mb:start(),
-    [?_assert(encode("\x{4f60}\x{597d}", cp936, [{return,list}]) =:= "\xc4\xe3\xba\xc3"),
-     ?_assert(decode("\xc4\xe3\xba\xc3", cp936, []) =:= "\x{4f60}\x{597d}"),
+    [?_assert(encode("\x{4f60}\x{597d}", gbk, [{return,list}]) =:= "\xc4\xe3\xba\xc3"),
+     ?_assert(decode("\xc4\xe3\xba\xc3", gbk, []) =:= "\x{4f60}\x{597d}"),
      ?_assert(encode("\x{4f60}\x{597d}", utf8, [{return,list}]) =:= "\xe4\xbd\xa0\xe5\xa5\xbd"),
      ?_assert(encode("\x{4f60}\x{597d}", utf8, [{return,list},{bom,true}]) =:= "\xef\xbb\xbf\xe4\xbd\xa0\xe5\xa5\xbd"),
      ?_assert(decode("\xe4\xbd\xa0\xe5\xa5\xbd", utf8, []) =:= "\x{4f60}\x{597d}")
