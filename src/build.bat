@@ -3,5 +3,6 @@
 @for %%I in (*.erl) do (
     erlc +debug_info -o ../ebin %%I)
 )
+copy /y mb.app ..\ebin
 erl -noshell -s mb_test test -s init stop
 pause
