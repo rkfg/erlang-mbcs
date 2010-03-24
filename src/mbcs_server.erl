@@ -122,7 +122,8 @@ parse_options1([{bom, false} | Tail], MbcsOptions=#mbcs_options{}) ->
 parse_options1([UnknownOption | _], #mbcs_options{}) ->
     {error, {unknown_option, [{option, UnknownOption}]}}.
 
-do_encode(Unicode, Encoding, Options, State=#mbcs_server{codecs=Codecs}) ->
+do_encode(Unicode, Encoding, Options, State=#mbcs_server{codecs=Codecs}) 
+  when is_list(Unicode), is_atom(Encoding), is_list(Options) ->
     case parse_options(Options, ?MBCS_ENCODE_OPTIONS_DEFAULT) of
         {ok, MbcsOptions} ->
             case dict:find(Encoding, Codecs) of
@@ -201,8 +202,18 @@ do_encode_mbcs1([Code | RestCodes],
                     {error, {unmapping_unicode, [{unicode, Code}, {pos, Pos}]}}
             end
     end.
-    
-do_decode(Binary, Encoding, Options, State=#mbcs_server{codecs=Codecs}) ->
+
+do_decode(String, Encoding, Options, State=#mbcs_server{})
+  when is_list(String), is_atom(Encoding), is_list(Options) ->
+    case catch list_to_binary(String) of
+        {'EXIT',{badarg, _}} ->
+            {error, {illegal_list, [{list, String}, {line, ?LINE}]}};
+        Binary ->
+            do_decode(Binary, Encoding, Options, State)
+    end;
+
+do_decode(Binary, Encoding, Options, State=#mbcs_server{codecs=Codecs}) 
+  when is_binary(Binary), is_atom(Encoding), is_list(Options) ->
     case parse_options(Options, ?MBCS_DECODE_OPTIONS_DEFAULT) of
         {ok, MbcsOptions} ->
             case dict:find(Encoding, Codecs) of
@@ -216,7 +227,7 @@ do_decode(Binary, Encoding, Options, State=#mbcs_server{codecs=Codecs}) ->
         {error, Reason} ->
             {error, Reason}
     end.
-    
+
 do_decode_unicode(Binary, Encoding, #mbcs_options{bom=_Bom}, _) ->
     unicode:characters_to_list(Binary, Encoding).
 

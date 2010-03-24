@@ -64,7 +64,7 @@ stop() ->
 
 -spec encode(unicode(), encoding()) -> binary() | string() | {error, tuple()}.
 
-encode(Unicode, Encoding) when is_list(Unicode), is_atom(Encoding) ->
+encode(Unicode, Encoding) ->
     encode(Unicode, Encoding, []).
 
 %% @spec encode(Unicode, Encoding, Options) -> binary() | string() | {error, Reason}
@@ -134,8 +134,7 @@ encode(Unicode, Encoding) when is_list(Unicode), is_atom(Encoding) ->
 
 -spec encode(unicode(), encoding(), options()) -> binary() | string() | {error, tuple()}.
 
-encode(Unicode, Encoding, Options) 
-  when is_list(Unicode), is_atom(Encoding), is_list(Options) ->
+encode(Unicode, Encoding, Options) ->
     gen_server:call(mbcs_server, {encode, Unicode, Encoding, Options}).
 
 %% ---------------------------------------------------------------------
@@ -148,10 +147,8 @@ encode(Unicode, Encoding, Options)
 
 -spec decode(string()|binary(), encoding()) -> unicode() | {error, tuple()}.
 
-decode(String, Encoding) when is_list(String), is_atom(Encoding) ->
-    decode(String, Encoding, []);
-decode(Binary, Encoding) when is_binary(Binary), is_atom(Encoding) ->
-    decode(Binary, Encoding, []).
+decode(StringOrBinary, Encoding) ->
+    decode(StringOrBinary, Encoding, []).
 
 %% @spec decode(StringOrBinary, Encoding, Options) -> unicode()
 %%
@@ -220,14 +217,5 @@ decode(Binary, Encoding) when is_binary(Binary), is_atom(Encoding) ->
 
 -spec decode(string()|binary(), encoding(), options()) -> unicode() | {error, tuple()}.
 
-decode(String, Encoding, Options) 
-  when is_list(String), is_atom(Encoding), is_list(Options) ->
-    case catch list_to_binary(String) of
-        {'EXIT',{badarg, _}} ->
-            {error, {illegal_list, [{list, String}, {line, ?LINE}]}};
-        Binary ->
-            decode(Binary, Encoding, Options)
-    end;
-decode(Binary, Encoding, Options) 
-  when is_binary(Binary), is_atom(Encoding), is_list(Options) ->
-    gen_server:call(mbcs_server, {decode, Binary, Encoding, Options}).
+decode(StringOrBinary, Encoding, Options) ->
+    gen_server:call(mbcs_server, {decode, StringOrBinary, Encoding, Options}).
