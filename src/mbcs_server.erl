@@ -3,7 +3,7 @@
 
 %% @doc erlang-mbcs server.
 
--module(mb_server).
+-module(mbcs_server).
 -author('luxiangyu@msn.com').
 -behaviour(gen_server).
 
@@ -13,13 +13,13 @@
          
 %%--------------------------------------------------------------------------
 
--define(MB_ENCODE_OPTIONS_DEFAULT, [{return, binary}, 
-                                    {error, strict}, 
-                                    {error_replace_char, $?}, 
-                                    {bom, false}]).
--define(MB_DECODE_OPTIONS_DEFAULT, [{return, binary}, 
-                                    {error, strict}, 
-                                    {error_replace_char, 16#FFFD}]).
+-define(MBCS_ENCODE_OPTIONS_DEFAULT, [{return, binary}, 
+                                     {error, strict}, 
+                                     {error_replace_char, $?}, 
+                                     {bom, false}]).
+-define(MBCS_DECODE_OPTIONS_DEFAULT, [{return, binary}, 
+                                      {error, strict}, 
+                                      {error_replace_char, 16#FFFD}]).
 
 %%--------------------------------------------------------------------------
          
@@ -30,12 +30,12 @@
 	  wctable      :: dict()    % wide character to multiple byte table
 	 }).
 
--record(mb_server, {
+-record(mbcs_server, {
 	  codecs       :: dict(),	% codecs name to codecs type 'unicode' | 'mbcs' | 'gb18030'
 	  mbcs_codecs  :: dict()    % mbcs codecs name to #mbcs_codecs_item{}
 	 }).
      
--record(mb_options, {
+-record(mbcs_options, {
 	  return             :: atom(),	            % file name
 	  error	             :: atom(),             % error strategy  'strict' | 'ignore' | 'replace'
 	  error_replace_char :: non_neg_integer(),	% error replace char
@@ -45,10 +45,10 @@
 %%--------------------------------------------------------------------------
 
 start() ->
-    DictPath = code:priv_dir(mb),
+    DictPath = code:priv_dir(mbcs),
     {ok, CodecsList}  = file:consult(DictPath ++ "/codecs.conf"),
     {ok, MbcsDictBin} = file:read_file(DictPath ++ "/mbcs.dict"),
-    State = #mb_server{codecs = dict:from_list(CodecsList),
+    State = #mbcs_server{codecs = dict:from_list(CodecsList),
                        mbcs_codecs = binary_to_term(MbcsDictBin)
                     },
     gen_server:start_link({local, ?MODULE}, ?MODULE, State, []).
@@ -56,7 +56,7 @@ start() ->
 stop() ->
     gen_server:cast(?MODULE, stop).
 
-init(State=#mb_server{}) ->
+init(State=#mbcs_server{}) ->
     {ok, State}.
 
 handle_call({encode, Unicode, Encoding, Options}, _From, State) ->
@@ -88,48 +88,48 @@ handle_info(Info, State) ->
     error_logger:info_report([{'INFO', Info}, {'State', State}]),
     {noreply, State}.
     
-%% @spec parse_options(Options, Default) -> {ok, MbOptions} | {error, Reason}
+%% @spec parse_options(Options, Default) -> {ok, MbcsOptions} | {error, Reason}
 %%
 %% @doc Parse Options List to Option Dict,
-%%      Return {ok, MbOptions} | {error, Reason}.
+%%      Return {ok, MbcsOptions} | {error, Reason}.
 
 parse_options(Options, OptionsDefault) 
   when is_list(Options), is_list(OptionsDefault) ->
-    parse_options1(OptionsDefault ++ Options, #mb_options{}).
+    parse_options1(OptionsDefault ++ Options, #mbcs_options{}).
 
-parse_options1([], MbOptions=#mb_options{}) ->
-    {ok, MbOptions};
-parse_options1([{return, binary} | Tail], MbOptions=#mb_options{}) ->
-    parse_options1(Tail, MbOptions#mb_options{return=binary});
-parse_options1([{return, list} | Tail], MbOptions=#mb_options{}) ->
-    parse_options1(Tail, MbOptions#mb_options{return=list});
-parse_options1([{error, ignore} | Tail], MbOptions=#mb_options{}) ->
-    parse_options1(Tail, MbOptions#mb_options{error=ignore});
-parse_options1([{error, strict} | Tail], MbOptions=#mb_options{}) ->
-    parse_options1(Tail, MbOptions#mb_options{error=strict});
-parse_options1([{error, replace} | Tail], MbOptions=#mb_options{}) ->
-    parse_options1(Tail, MbOptions#mb_options{error=replace});
-parse_options1([{replace, Char} | Tail], MbOptions=#mb_options{})
+parse_options1([], MbcsOptions=#mbcs_options{}) ->
+    {ok, MbcsOptions};
+parse_options1([{return, binary} | Tail], MbcsOptions=#mbcs_options{}) ->
+    parse_options1(Tail, MbcsOptions#mbcs_options{return=binary});
+parse_options1([{return, list} | Tail], MbcsOptions=#mbcs_options{}) ->
+    parse_options1(Tail, MbcsOptions#mbcs_options{return=list});
+parse_options1([{error, ignore} | Tail], MbcsOptions=#mbcs_options{}) ->
+    parse_options1(Tail, MbcsOptions#mbcs_options{error=ignore});
+parse_options1([{error, strict} | Tail], MbcsOptions=#mbcs_options{}) ->
+    parse_options1(Tail, MbcsOptions#mbcs_options{error=strict});
+parse_options1([{error, replace} | Tail], MbcsOptions=#mbcs_options{}) ->
+    parse_options1(Tail, MbcsOptions#mbcs_options{error=replace});
+parse_options1([{replace, Char} | Tail], MbcsOptions=#mbcs_options{})
   when is_integer(Char)->
-    parse_options1(Tail, MbOptions#mb_options{error=replace, error_replace_char=Char});
-parse_options1([{error_replace_char, Char} | Tail], MbOptions=#mb_options{})
+    parse_options1(Tail, MbcsOptions#mbcs_options{error=replace, error_replace_char=Char});
+parse_options1([{error_replace_char, Char} | Tail], MbcsOptions=#mbcs_options{})
   when is_integer(Char)->
-    parse_options1(Tail, MbOptions#mb_options{error_replace_char=Char});
-parse_options1([{bom, true} | Tail], MbOptions=#mb_options{}) ->
-    parse_options1(Tail, MbOptions#mb_options{bom=true});
-parse_options1([{bom, false} | Tail], MbOptions=#mb_options{}) ->
-    parse_options1(Tail, MbOptions#mb_options{bom=false});
-parse_options1([UnknownOption | _], #mb_options{}) ->
+    parse_options1(Tail, MbcsOptions#mbcs_options{error_replace_char=Char});
+parse_options1([{bom, true} | Tail], MbcsOptions=#mbcs_options{}) ->
+    parse_options1(Tail, MbcsOptions#mbcs_options{bom=true});
+parse_options1([{bom, false} | Tail], MbcsOptions=#mbcs_options{}) ->
+    parse_options1(Tail, MbcsOptions#mbcs_options{bom=false});
+parse_options1([UnknownOption | _], #mbcs_options{}) ->
     {error, {unknown_option, [{option, UnknownOption}]}}.
 
-do_encode(Unicode, Encoding, Options, State=#mb_server{codecs=Codecs}) ->
-    case parse_options(Options, ?MB_ENCODE_OPTIONS_DEFAULT) of
-        {ok, MbOptions} ->
+do_encode(Unicode, Encoding, Options, State=#mbcs_server{codecs=Codecs}) ->
+    case parse_options(Options, ?MBCS_ENCODE_OPTIONS_DEFAULT) of
+        {ok, MbcsOptions} ->
             case dict:find(Encoding, Codecs) of
                 {ok, {unicode, MapedEncoding}} ->
-                    do_encode_unicode(Unicode, MapedEncoding, MbOptions, State);
+                    do_encode_unicode(Unicode, MapedEncoding, MbcsOptions, State);
                 {ok, {mbcs, MapedEncoding}} ->
-                    do_encode_mbcs(Unicode, MapedEncoding, MbOptions, State);
+                    do_encode_mbcs(Unicode, MapedEncoding, MbcsOptions, State);
                 error   ->
                     {error, {unkonwn_encoding, [{encoding, Encoding}]}}
             end;
@@ -137,7 +137,7 @@ do_encode(Unicode, Encoding, Options, State=#mb_server{codecs=Codecs}) ->
             {error, Reason}
     end.
 
-do_encode_unicode(Unicode, Encoding, #mb_options{return=Return, bom=Bom}, _) ->
+do_encode_unicode(Unicode, Encoding, #mbcs_options{return=Return, bom=Bom}, _) ->
     NewUnicode  =   case Unicode of
                         [16#FEFF, RestCodes] ->
                             case Bom of
@@ -162,16 +162,16 @@ do_encode_unicode(Unicode, Encoding, #mb_options{return=Return, bom=Bom}, _) ->
             erlang:binary_to_list(Binary)
     end.
     
-do_encode_mbcs(Unicode, Encoding, MbOptions, State) ->
-    case dict:find(Encoding, State#mb_server.mbcs_codecs) of
+do_encode_mbcs(Unicode, Encoding, MbcsOptions, State) ->
+    case dict:find(Encoding, State#mbcs_server.mbcs_codecs) of
         {ok, #mbcs_codecs_item{wctable=WCTable}} ->
-            do_encode_mbcs1(Unicode, WCTable, MbOptions, 1, []);
+            do_encode_mbcs1(Unicode, WCTable, MbcsOptions, 1, []);
         error ->
             {error, {unkonwn_encoding, [{encoding, Encoding}]}}
     end.
     
     
-do_encode_mbcs1([], _, #mb_options{return=Return}, _, String) ->
+do_encode_mbcs1([], _, #mbcs_options{return=Return}, _, String) ->
     ReturnString = lists:reverse(String),
     case Return of
         list   -> ReturnString;
@@ -179,7 +179,7 @@ do_encode_mbcs1([], _, #mb_options{return=Return}, _, String) ->
     end;
 do_encode_mbcs1([Code | RestCodes],
                 WCTable,
-                MbOptions=#mb_options{error=Error, 
+                MbcsOptions=#mbcs_options{error=Error, 
                                     error_replace_char=ErrorReplaceChar}, 
                 Pos, 
                 String) ->
@@ -187,29 +187,29 @@ do_encode_mbcs1([Code | RestCodes],
         {ok, Multibyte} ->
             case Multibyte > 16#FF of
                 false ->
-                    do_encode_mbcs1(RestCodes, WCTable, MbOptions, Pos+1, [Multibyte | String]);
+                    do_encode_mbcs1(RestCodes, WCTable, MbcsOptions, Pos+1, [Multibyte | String]);
                 true ->
-                    do_encode_mbcs1(RestCodes, WCTable, MbOptions, Pos+1, [Multibyte band 16#FF, Multibyte bsr 8 | String])
+                    do_encode_mbcs1(RestCodes, WCTable, MbcsOptions, Pos+1, [Multibyte band 16#FF, Multibyte bsr 8 | String])
             end;
         error ->
             case Error of
                 ignore ->
-                    do_encode_mbcs1(RestCodes, WCTable, MbOptions, Pos+1, String);
+                    do_encode_mbcs1(RestCodes, WCTable, MbcsOptions, Pos+1, String);
                 replace ->
-                    do_encode_mbcs1(RestCodes, WCTable, MbOptions, Pos+1, [ErrorReplaceChar | String]);
+                    do_encode_mbcs1(RestCodes, WCTable, MbcsOptions, Pos+1, [ErrorReplaceChar | String]);
                 strict ->
                     {error, {unmapping_unicode, [{unicode, Code}, {pos, Pos}]}}
             end
     end.
     
-do_decode(Binary, Encoding, Options, State=#mb_server{codecs=Codecs}) ->
-    case parse_options(Options, ?MB_DECODE_OPTIONS_DEFAULT) of
-        {ok, MbOptions} ->
+do_decode(Binary, Encoding, Options, State=#mbcs_server{codecs=Codecs}) ->
+    case parse_options(Options, ?MBCS_DECODE_OPTIONS_DEFAULT) of
+        {ok, MbcsOptions} ->
             case dict:find(Encoding, Codecs) of
                 {ok, {unicode, MapedEncoding}} ->
-                    do_decode_unicode(Binary, MapedEncoding, MbOptions, State);
+                    do_decode_unicode(Binary, MapedEncoding, MbcsOptions, State);
                 {ok, {mbcs, MapedEncoding}} ->
-                    do_decode_mbcs(Binary, MapedEncoding, MbOptions, State);
+                    do_decode_mbcs(Binary, MapedEncoding, MbcsOptions, State);
                 error   ->
                     {error, {unkonwn_encoding, [{encoding, Encoding}]}}
             end;
@@ -217,13 +217,13 @@ do_decode(Binary, Encoding, Options, State=#mb_server{codecs=Codecs}) ->
             {error, Reason}
     end.
     
-do_decode_unicode(Binary, Encoding, #mb_options{bom=_Bom}, _) ->
+do_decode_unicode(Binary, Encoding, #mbcs_options{bom=_Bom}, _) ->
     unicode:characters_to_list(Binary, Encoding).
 
-do_decode_mbcs(Binary, Encoding, MbOptions, State) ->
-    case dict:find(Encoding, State#mb_server.mbcs_codecs) of
+do_decode_mbcs(Binary, Encoding, MbcsOptions, State) ->
+    case dict:find(Encoding, State#mbcs_server.mbcs_codecs) of
         {ok, #mbcs_codecs_item{undefined=Undefined, leadbytes=Leadbytes, mbtable=MBTable}} ->
-            do_decode_mbcs1(Binary, Undefined, Leadbytes, MBTable, MbOptions, 1, []);
+            do_decode_mbcs1(Binary, Undefined, Leadbytes, MBTable, MbcsOptions, 1, []);
         error ->
             {error, {unkonwn_encoding, [{encoding, Encoding}]}}
     end. 
@@ -234,7 +234,7 @@ do_decode_mbcs1(<<LeadByte:8, Rest/binary>>,
             Undefined,
             Leadbytes,
             MBTable,
-            MbOptions=#mb_options{error=Error, 
+            MbcsOptions=#mbcs_options{error=Error, 
                                   error_replace_char=ErrorReplaceChar}, 
             Pos, 
             Unicode) ->
@@ -243,12 +243,12 @@ do_decode_mbcs1(<<LeadByte:8, Rest/binary>>,
             case Error of
                 ignore ->
                     do_decode_mbcs1(Rest, Undefined, Leadbytes, MBTable, 
-                                    MbOptions, 
+                                    MbcsOptions, 
                                     Pos+1, 
                                     Unicode);
                 replace ->
                     do_decode_mbcs1(Rest, Undefined, Leadbytes, MBTable, 
-                                    MbOptions, 
+                                    MbcsOptions, 
                                     Pos+1, 
                                     [ErrorReplaceChar | Unicode]);
                 strict ->
@@ -262,7 +262,7 @@ do_decode_mbcs1(<<LeadByte:8, Rest/binary>>,
                         {ok, Code} ->
                             do_decode_mbcs1(Rest, Undefined, 
                                             Leadbytes, MBTable, 
-                                            MbOptions, 
+                                            MbcsOptions, 
                                             Pos+1, 
                                             [Code | Unicode]);
                         error ->
@@ -270,12 +270,12 @@ do_decode_mbcs1(<<LeadByte:8, Rest/binary>>,
                                 ignore ->
                                     do_decode_mbcs1(Rest, Undefined, 
                                                     Leadbytes, MBTable, 
-                                                    MbOptions, 
+                                                    MbcsOptions, 
                                                     Pos+1, 
                                                     Unicode);
                                 replace ->
                                     do_decode_mbcs1(Rest, Undefined, Leadbytes, 
-                                                    MBTable, MbOptions, 
+                                                    MBTable, MbcsOptions, 
                                                     Pos+1, 
                                                     [ErrorReplaceChar | Unicode]);
                                 strict ->
@@ -287,9 +287,9 @@ do_decode_mbcs1(<<LeadByte:8, Rest/binary>>,
                         0 ->
                             case Error of
                                 ignore ->
-                                    do_decode_mbcs1(Rest, Undefined, Leadbytes, MBTable, MbOptions, Pos+1, Unicode);
+                                    do_decode_mbcs1(Rest, Undefined, Leadbytes, MBTable, MbcsOptions, Pos+1, Unicode);
                                 replace ->
-                                    do_decode_mbcs1(Rest, Undefined, Leadbytes, MBTable, MbOptions, Pos+1, [ErrorReplaceChar | Unicode]);
+                                    do_decode_mbcs1(Rest, Undefined, Leadbytes, MBTable, MbcsOptions, Pos+1, [ErrorReplaceChar | Unicode]);
                                 strict ->
                                     {error, {incomplete_multibyte_sequence, [{leadbyte, LeadByte}, {pos, Pos}]}}
                             end;
@@ -298,13 +298,13 @@ do_decode_mbcs1(<<LeadByte:8, Rest/binary>>,
                             MultibyteChar = LeadByte bsl 8 bor FollowByte,
                             case dict:find(MultibyteChar, MBTable) of
                                 {ok, Code} ->
-                                    do_decode_mbcs1(Rest1, Undefined, Leadbytes, MBTable, MbOptions, Pos+2, [Code | Unicode]);
+                                    do_decode_mbcs1(Rest1, Undefined, Leadbytes, MBTable, MbcsOptions, Pos+2, [Code | Unicode]);
                                 error ->
                                     case Error of
                                         ignore ->
-                                            do_decode_mbcs1(Rest1, Undefined, Leadbytes, MBTable, MbOptions, Pos+2, Unicode);
+                                            do_decode_mbcs1(Rest1, Undefined, Leadbytes, MBTable, MbcsOptions, Pos+2, Unicode);
                                         replace ->
-                                            do_decode_mbcs1(Rest1, Undefined, Leadbytes, MBTable, MbOptions, Pos+2, [ErrorReplaceChar | Unicode]);
+                                            do_decode_mbcs1(Rest1, Undefined, Leadbytes, MBTable, MbcsOptions, Pos+2, [ErrorReplaceChar | Unicode]);
                                         strict ->
                                             {error, {unmapping_multibyte_character, [{multibyte_character, MultibyteChar}, {pos, Pos}]}}
                                     end

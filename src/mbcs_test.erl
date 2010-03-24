@@ -3,18 +3,18 @@
 %% created on 2010-02-20
 %% 
 %% Some simple functional test cases, test the mb implementation
--module(mb_test).
+-module(mbcs_test).
 -export([encode/3, decode/3]).
 -include_lib("eunit/include/eunit.hrl").
 
 encode(Unicode, Encoding, Options) ->
-    mb:encode(Unicode, Encoding, Options).
+    mbcs:encode(Unicode, Encoding, Options).
     
 decode(String, Encoding, Options) ->
-    mb:decode(String, Encoding, Options).
+    mbcs:decode(String, Encoding, Options).
 
 mb_test_() ->
-    mb:start(),
+    mbcs:start(),
     [?_assert(encode("\x{4f60}\x{597d}", cp936, [{return,list}]) =:= "\xc4\xe3\xba\xc3"),
      ?_assert(encode("\x{4f60}\x{597d}", gbk, [{return,list}]) =:= "\xc4\xe3\xba\xc3"),
      ?_assert(decode("\xc4\xe3\xba\xc3", gbk, []) =:= "\x{4f60}\x{597d}"),

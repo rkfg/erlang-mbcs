@@ -1,8 +1,8 @@
 @path D:\erl5.7.5\bin;%Path%
-@del /f /q /s ..\ebin\*.beam .\erl_crash.dump >NUL
+@del /f /q /s ..\ebin\*.beam ..\ebin\*.app .\erl_crash.dump >NUL
 @for %%I in (*.erl) do (
     erlc +debug_info -o ../ebin %%I)
 )
-copy /y mb.app ..\ebin
-erl -noshell -s mb_test test -s init stop
+copy /y mbcs.app ..\ebin
+erl -noshell -s mbcs_test test -s init stop
 pause

@@ -16,7 +16,7 @@
 %% 
 %% %CopyrightEnd%
 %%
--module(mb).
+-module(mbcs).
 -export([start/0, stop/0]).
 -export([encode/2, encode/3, decode/2, decode/3]).
 
@@ -29,14 +29,14 @@
 
 %%---------------------------------------------------------------------------
 
-%% @spec start() -> {ok, Pid}
+%% @spec start() -> ok | {error, Reason}
 %%
-%% @doc Start mb server, Return {ok, Pid}.
+%% @doc Start mbcs server, Return {ok, Pid}.
 
 -spec start() -> ok.
 
 start() ->
-    case application:start(mb) of
+    case application:start(mbcs) of
         {ok, _} ->
             ok;
         {error,{already_started,_}} ->
@@ -47,12 +47,12 @@ start() ->
     
 %% @spec stop() -> ok
 %%
-%% @doc Stop the Mbcs server.
+%% @doc Stop the mbcs server.
 
 -spec stop() -> ok.
 
 stop() ->
-    application:stop(mb).
+    application:stop(mbcs).
 
 %% ---------------------------------------------------------------------
 
@@ -136,7 +136,7 @@ encode(Unicode, Encoding) when is_list(Unicode), is_atom(Encoding) ->
 
 encode(Unicode, Encoding, Options) 
   when is_list(Unicode), is_atom(Encoding), is_list(Options) ->
-    gen_server:call(mb_server, {encode, Unicode, Encoding, Options}).
+    gen_server:call(mbcs_server, {encode, Unicode, Encoding, Options}).
 
 %% ---------------------------------------------------------------------
 
@@ -230,4 +230,4 @@ decode(String, Encoding, Options)
     end;
 decode(Binary, Encoding, Options) 
   when is_binary(Binary), is_atom(Encoding), is_list(Options) ->
-    gen_server:call(mb_server, {decode, Binary, Encoding, Options}).
+    gen_server:call(mbcs_server, {decode, Binary, Encoding, Options}).

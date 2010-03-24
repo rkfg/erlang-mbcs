@@ -1,6 +1,6 @@
 %% @doc Supervisor for the mb application.
 
--module(mb_sup).
+-module(mbcs_sup).
 -author('luxiangyu@msn.com').
 
 -behaviour(application).
@@ -47,7 +47,7 @@ init([[]]) -> % Application
 init(BadArg) ->
     {error, {badarg, BadArg}}.
 init() ->
-    Processes = [{mb_server, {mb_server, start, []},
-                 permanent, brutal_kill, worker, [mb_server]}],
+    Processes = [{mbcs_server, {mbcs_server, start, []},
+                 permanent, brutal_kill, worker, [mbcs_server]}],
     {ok, {{one_for_one, 1, 60}, Processes}}.
 
