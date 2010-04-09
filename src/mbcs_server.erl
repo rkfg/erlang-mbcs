@@ -71,6 +71,14 @@ handle_call({decode, Binary, Encoding, Options}, _From, State)
   when is_binary(Binary), is_atom(Encoding), is_list(Options) ->
     Res = do_decode_binary(Binary, Encoding, Options, State),
     {reply, Res, State};
+handle_call({from_to, String, InputEncoding, OutputEncoding, Options}, _From, State)
+  when is_list(String), is_atom(InputEncoding), is_atom(OutputEncoding), is_list(Options) ->
+    Res = do_from_to_string(String, InputEncoding, OutputEncoding, Options, State),
+    {reply, Res, State};
+handle_call({from_to, Binary, InputEncoding, OutputEncoding, Options}, _From, State)
+  when is_binary(Binary), is_atom(InputEncoding), is_atom(OutputEncoding), is_list(Options) ->
+    Res = do_from_to_binary(Binary, InputEncoding, OutputEncoding, Options, State),
+    {reply, Res, State};
 handle_call(_Message, _From, State) ->
     Res = {error, illegal_message},
     {reply, Res, State}.
@@ -325,5 +333,27 @@ do_decode_mbcs1(<<LeadByte:8, Rest/binary>>,
                                     end
                             end
                     end
+            end
+    end.
+
+do_from_to_string(String, InputEncoding, OutputEncoding, Options, State=#mbcs_server{}) ->
+    try erlang:list_to_binary(String) of
+        Binary ->
+            do_from_to_binary(Binary, InputEncoding, OutputEncoding, Options, State)
+    catch
+        error:_ -> 
+            {error, {illegal_list, [{list, String}, {line, ?LINE}]}}
+    end.
+
+do_from_to_binary(Binary, InputEncoding, OutputEncoding, Options, State=#mbcs_server{})  ->
+    case do_decode_binary(Binary, InputEncoding, Options, State) of
+        {error, Reason} ->
+            {error, Reason};
+        Unicode ->
+            case do_encode(Unicode, OutputEncoding, Options, State) of
+                {error, Reason} ->
+                    {error, Reason};
+                StringOrBinary ->
+                    StringOrBinary
             end
     end.

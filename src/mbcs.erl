@@ -18,7 +18,7 @@
 %%
 -module(mbcs).
 -export([start/0, stop/0]).
--export([encode/2, encode/3, decode/2, decode/3]).
+-export([encode/2, encode/3, decode/2, decode/3, from_to/3, from_to/4]).
 
 %%---------------------------------------------------------------------------
 
@@ -160,7 +160,7 @@ encode(Unicode, Encoding, Options) ->
 decode(StringOrBinary, Encoding) ->
     decode(StringOrBinary, Encoding, []).
 
-%% @spec decode(StringOrBinary, Encoding, Options) -> unicode()
+%% @spec decode(StringOrBinary, Encoding, Options) -> unicode() | {error, Reason}
 %%
 %%	    StringOrBinary  = string()|binary()
 %%	    Encoding =  'cp037'
@@ -230,6 +230,100 @@ decode(StringOrBinary, Encoding) ->
 decode(StringOrBinary, Encoding, Options) ->
     try
         gen_server:call(mbcs_server, {decode, StringOrBinary, Encoding, Options})
+    catch
+        throw:_ ->
+            {error, unkonwn_error};
+        exit:_ ->
+            {error, unkonwn_error};
+        error:_ ->
+            {error, unkonwn_error}
+    end.
+    
+%% ---------------------------------------------------------------------
+
+%% @spec from_to(StringOrBinary, InputEncoding, OutputEncoding) -> string() | binary() | {error, Reason}
+%%
+%% @equiv from_to(StringOrBinary, InputEncoding, OutputEncoding, [])
+%%
+%% @see from_to/4
+
+-spec from_to(string()|binary(), encoding(), encoding()) -> string() | binary() | {error, tuple()}.
+
+from_to(StringOrBinary, InputEncoding, OutputEncoding) ->
+    from_to(StringOrBinary, InputEncoding, OutputEncoding, []).
+
+%% @spec from_to(StringOrBinary, InputEncoding, OutputEncoding, Options) -> string() | binary() | {error, Reason}
+%%
+%%	    StringOrBinary  = string()|binary()
+%%      InputEncoding   = Encoding
+%%      OutputEncoding  = Encoding
+%%	    Encoding =  'cp037'
+%%                | 'cp437'
+%%                | 'cp500'
+%%                | 'cp737'
+%%                | 'cp775'
+%%                | 'cp850'
+%%                | 'cp852'
+%%                | 'cp855'
+%%                | 'cp857'
+%%                | 'cp860'
+%%                | 'cp861'
+%%                | 'cp862'
+%%                | 'cp863'
+%%                | 'cp864'
+%%                | 'cp865'
+%%                | 'cp866'
+%%                | 'cp869'
+%%                | 'cp874'
+%%                | 'cp875'
+%%                | 'cp932'
+%%                | 'cp936'
+%%                | 'gbk'
+%%                | 'cp949'
+%%                | 'cp950'
+%%                | 'big5'
+%%                | 'cp1026'
+%%                | 'cp1250'
+%%                | 'cp1251'
+%%                | 'cp1252'
+%%                | 'cp1253'
+%%                | 'cp1254'
+%%                | 'cp1255'
+%%                | 'cp1256'
+%%                | 'cp1257'
+%%                | 'cp1258'
+%%                | 'cp10000'
+%%                | 'cp10006'
+%%                | 'cp10007'
+%%                | 'cp10029'
+%%                | 'cp10079'
+%%                | 'cp10081'
+%%                | 'utf8' 
+%%                | 'utf16' 
+%%                | 'utf16le' 
+%%                | 'utf16be' 
+%%                | 'utf32' 
+%%                | 'utf32le' 
+%%                | 'utf32be'
+%%      Options  = [Option]
+%%      Option =  {return, list} 
+%%              | {return, binary}
+%%              | {error, strict} 
+%%              | {error, ignore}
+%%              | {error, replace} 
+%%              | {replace, non_neg_integer()}
+%%              | {bom, true} 
+%%              | {bom, false}
+%%
+%% @doc Return a Unicode.
+%%
+%% @see decode/2
+
+-spec from_to(string()|binary(), encoding(), encoding(), options()) -> string() | binary() | {error, tuple()}.
+
+from_to(StringOrBinary, InputEncoding, OutputEncoding, Options) ->
+    try
+        gen_server:call(mbcs_server, {from_to, StringOrBinary, InputEncoding, OutputEncoding, Options})
     catch
         throw:_ ->
             {error, unkonwn_error};
