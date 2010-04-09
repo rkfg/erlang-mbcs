@@ -209,11 +209,12 @@ do_encode_mbcs1([Code | RestCodes],
     end.
 
 do_decode_string(String, Encoding, Options, State=#mbcs_server{}) ->
-    case catch list_to_binary(String) of
-        {'EXIT',{badarg, _}} ->
-            {error, {illegal_list, [{list, String}, {line, ?LINE}]}};
+    try erlang:list_to_binary(String) of
         Binary ->
             do_decode_binary(Binary, Encoding, Options, State)
+    catch
+        error:_ -> 
+            {error, {illegal_list, [{list, String}, {line, ?LINE}]}}
     end.
 
 do_decode_binary(Binary, Encoding, Options, State=#mbcs_server{codecs=Codecs})  ->

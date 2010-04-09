@@ -135,7 +135,17 @@ encode(Unicode, Encoding) ->
 -spec encode(unicode(), encoding(), options()) -> binary() | string() | {error, tuple()}.
 
 encode(Unicode, Encoding, Options) ->
-    gen_server:call(mbcs_server, {encode, Unicode, Encoding, Options}).
+    try
+        gen_server:call(mbcs_server, {encode, Unicode, Encoding, Options})
+    catch
+        throw:_ ->
+            {error, unkonwn_error};
+        exit:_ ->
+            {error, unkonwn_error};
+        error:_ ->
+            {error, unkonwn_error}
+    end.
+
 
 %% ---------------------------------------------------------------------
 
@@ -218,4 +228,14 @@ decode(StringOrBinary, Encoding) ->
 -spec decode(string()|binary(), encoding(), options()) -> unicode() | {error, tuple()}.
 
 decode(StringOrBinary, Encoding, Options) ->
-    gen_server:call(mbcs_server, {decode, StringOrBinary, Encoding, Options}).
+    try
+        gen_server:call(mbcs_server, {decode, StringOrBinary, Encoding, Options})
+    catch
+        throw:_ ->
+            {error, unkonwn_error};
+        exit:_ ->
+            {error, unkonwn_error};
+        error:_ ->
+            {error, unkonwn_error}
+    end.
+    
