@@ -10,31 +10,31 @@
 -export([start/0, stop/0]).
 -export([init/1, handle_call/3, handle_cast/2, terminate/2, code_change/3,
          handle_info/2]).
-         
+
 %%--------------------------------------------------------------------------
 
--define(MBCS_ENCODE_OPTIONS_DEFAULT, [{return, binary}, 
-                                     {error, strict}, 
-                                     {error_replace_char, $?}, 
+-define(MBCS_ENCODE_OPTIONS_DEFAULT, [{return, binary},
+                                     {error, strict},
+                                     {error_replace_char, $?},
                                      {bom, false}]).
--define(MBCS_DECODE_OPTIONS_DEFAULT, [{return, binary}, 
-                                      {error, strict}, 
+-define(MBCS_DECODE_OPTIONS_DEFAULT, [{return, binary},
+                                      {error, strict},
                                       {error_replace_char, 16#FFFD}]).
 
 %%--------------------------------------------------------------------------
-         
+
 -record(mbcs_codecs_item, {
-	  undefined    :: set(),	% undefine bytes
-	  leadbytes	   :: set(),    % dbcs lead bytes
-	  mbtable      :: dict(),	% multiple byte to wide character table
-	  wctable      :: dict()    % wide character to multiple byte table
+	  undefined    :: sets:set(),	% undefine bytes
+	  leadbytes	   :: sets:set(),    % dbcs lead bytes
+	  mbtable      :: dict:dict(),	% multiple byte to wide character table
+	  wctable      :: dict:dict()    % wide character to multiple byte table
 	 }).
 
 -record(mbcs_server, {
-	  codecs       :: dict(),	% codecs name to codecs type 'unicode' | 'mbcs' | 'gb18030'
-	  mbcs_codecs  :: dict()    % mbcs codecs name to #mbcs_codecs_item{}
+	  codecs       :: dict:dict(),	% codecs name to codecs type 'unicode' | 'mbcs' | 'gb18030'
+	  mbcs_codecs  :: dict:dict()    % mbcs codecs name to #mbcs_codecs_item{}
 	 }).
-     
+
 -record(mbcs_options, {
 	  return             :: atom(),	            % file name
 	  error	             :: atom(),             % error strategy  'strict' | 'ignore' | 'replace'
@@ -101,13 +101,13 @@ handle_info({'EXIT', _Pid, _Reason}, State) ->
 handle_info(Info, State) ->
     error_logger:info_report([{'INFO', Info}, {'State', State}]),
     {noreply, State}.
-    
+
 %% @spec parse_options(Options, Default) -> {ok, MbcsOptions} | {error, Reason}
 %%
 %% @doc Parse Options List to Option Dict,
 %%      Return {ok, MbcsOptions} | {error, Reason}.
 
-parse_options(Options, OptionsDefault) 
+parse_options(Options, OptionsDefault)
   when is_list(Options), is_list(OptionsDefault) ->
     parse_options1(OptionsDefault ++ Options, #mbcs_options{}).
 
@@ -175,7 +175,7 @@ do_encode_unicode(Unicode, Encoding, #mbcs_options{return=Return, bom=Bom}, _) -
         list ->
             erlang:binary_to_list(Binary)
     end.
-    
+
 do_encode_mbcs(Unicode, Encoding, MbcsOptions, State) ->
     case dict:find(Encoding, State#mbcs_server.mbcs_codecs) of
         {ok, #mbcs_codecs_item{wctable=WCTable}} ->
@@ -183,8 +183,8 @@ do_encode_mbcs(Unicode, Encoding, MbcsOptions, State) ->
         error ->
             {error, {unkonwn_encoding, [{encoding, Encoding}]}}
     end.
-    
-    
+
+
 do_encode_mbcs1([], _, #mbcs_options{return=Return}, _, String) ->
     ReturnString = lists:reverse(String),
     case Return of
@@ -193,9 +193,9 @@ do_encode_mbcs1([], _, #mbcs_options{return=Return}, _, String) ->
     end;
 do_encode_mbcs1([Code | RestCodes],
                 WCTable,
-                MbcsOptions=#mbcs_options{error=Error, 
-                                    error_replace_char=ErrorReplaceChar}, 
-                Pos, 
+                MbcsOptions=#mbcs_options{error=Error,
+                                    error_replace_char=ErrorReplaceChar},
+                Pos,
                 String) ->
     case dict:find(Code, WCTable) of
         {ok, Multibyte} ->
@@ -221,7 +221,7 @@ do_decode_string(String, Encoding, Options, State=#mbcs_server{}) ->
         Binary ->
             do_decode_binary(Binary, Encoding, Options, State)
     catch
-        error:_ -> 
+        error:_ ->
             {error, {illegal_list, [{list, String}, {line, ?LINE}]}}
     end.
 
@@ -249,7 +249,7 @@ do_decode_mbcs(Binary, Encoding, MbcsOptions, State) ->
             do_decode_mbcs1(Binary, Undefined, Leadbytes, MBTable, MbcsOptions, 1, []);
         error ->
             {error, {unkonwn_encoding, [{encoding, Encoding}]}}
-    end. 
+    end.
 
 do_decode_mbcs1(<<>>, _, _, _, _, _, Unicode) when is_list(Unicode) ->
     lists:reverse(Unicode);
@@ -257,25 +257,25 @@ do_decode_mbcs1(<<LeadByte:8, Rest/binary>>,
             Undefined,
             Leadbytes,
             MBTable,
-            MbcsOptions=#mbcs_options{error=Error, 
-                                  error_replace_char=ErrorReplaceChar}, 
-            Pos, 
+            MbcsOptions=#mbcs_options{error=Error,
+                                  error_replace_char=ErrorReplaceChar},
+            Pos,
             Unicode) ->
     case sets:is_element(LeadByte, Undefined) of
         true ->
             case Error of
                 ignore ->
-                    do_decode_mbcs1(Rest, Undefined, Leadbytes, MBTable, 
-                                    MbcsOptions, 
-                                    Pos+1, 
+                    do_decode_mbcs1(Rest, Undefined, Leadbytes, MBTable,
+                                    MbcsOptions,
+                                    Pos+1,
                                     Unicode);
                 replace ->
-                    do_decode_mbcs1(Rest, Undefined, Leadbytes, MBTable, 
-                                    MbcsOptions, 
-                                    Pos+1, 
+                    do_decode_mbcs1(Rest, Undefined, Leadbytes, MBTable,
+                                    MbcsOptions,
+                                    Pos+1,
                                     [ErrorReplaceChar | Unicode]);
                 strict ->
-                    {error, {undefined_character, [{character, LeadByte}, 
+                    {error, {undefined_character, [{character, LeadByte},
                                                    {pos, Pos}]}}
             end;
         false ->
@@ -283,23 +283,23 @@ do_decode_mbcs1(<<LeadByte:8, Rest/binary>>,
                 false ->
                     case dict:find(LeadByte, MBTable) of
                         {ok, Code} ->
-                            do_decode_mbcs1(Rest, Undefined, 
-                                            Leadbytes, MBTable, 
-                                            MbcsOptions, 
-                                            Pos+1, 
+                            do_decode_mbcs1(Rest, Undefined,
+                                            Leadbytes, MBTable,
+                                            MbcsOptions,
+                                            Pos+1,
                                             [Code | Unicode]);
                         error ->
                             case Error of
                                 ignore ->
-                                    do_decode_mbcs1(Rest, Undefined, 
-                                                    Leadbytes, MBTable, 
-                                                    MbcsOptions, 
-                                                    Pos+1, 
+                                    do_decode_mbcs1(Rest, Undefined,
+                                                    Leadbytes, MBTable,
+                                                    MbcsOptions,
+                                                    Pos+1,
                                                     Unicode);
                                 replace ->
-                                    do_decode_mbcs1(Rest, Undefined, Leadbytes, 
-                                                    MBTable, MbcsOptions, 
-                                                    Pos+1, 
+                                    do_decode_mbcs1(Rest, Undefined, Leadbytes,
+                                                    MBTable, MbcsOptions,
+                                                    Pos+1,
                                                     [ErrorReplaceChar | Unicode]);
                                 strict ->
                                     {error, {unmapping_character, [{character, LeadByte}, {pos, Pos}]}}
@@ -341,7 +341,7 @@ do_from_to_string(String, InputEncoding, OutputEncoding, Options, State=#mbcs_se
         Binary ->
             do_from_to_binary(Binary, InputEncoding, OutputEncoding, Options, State)
     catch
-        error:_ -> 
+        error:_ ->
             {error, {illegal_list, [{list, String}, {line, ?LINE}]}}
     end.
 
