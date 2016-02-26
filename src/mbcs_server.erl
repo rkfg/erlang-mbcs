@@ -251,6 +251,8 @@ do_decode_mbcs(Binary, Encoding, MbcsOptions, State) ->
             {error, {unkonwn_encoding, [{encoding, Encoding}]}}
     end.
 
+do_decode_mbcs1(<<>>, _, _, _, #mbcs_options{return=binary}, _, Unicode) when is_list(Unicode) ->
+    unicode:characters_to_binary(lists:reverse(Unicode));
 do_decode_mbcs1(<<>>, _, _, _, _, _, Unicode) when is_list(Unicode) ->
     lists:reverse(Unicode);
 do_decode_mbcs1(<<LeadByte:8, Rest/binary>>,
