@@ -8,7 +8,7 @@ all: app $(ERL_OBJECTS)
 
 app:
 	mkdir -p ebin/
-	cp src/$(PKGNAME).app ebin/
+	cp src/$(PKGNAME).app.src ebin/$(PKGNAME).app
 clean:
 	rm -f ebin/*.beam erl_crash.dump ebin/*.app
 
